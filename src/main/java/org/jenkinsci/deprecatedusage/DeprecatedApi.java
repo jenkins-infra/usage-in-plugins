@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
@@ -92,38 +93,61 @@ public class DeprecatedApi {
             return (asmAccess & OPCODE_PUBLIC) != 0;
         }
 
-        private boolean isDeprecated(int asmAccess) {
-            return (asmAccess & OPCODE_DEPRECATED) != 0;
-        }
-
         @Override
         public void visit(int version, int access, String name, String signature, String superName,
                 String[] interfaces) {
             // log(name + " extends " + superName + " {");
             if (isPublic(access)) {
                 currentClass = name;
-                if (isDeprecated(access)) {
-                    classes.add(name);
-                }
             } else {
                 currentClass = null;
             }
         }
 
+        private boolean isRestrictedAnnotation(String desc) {
+            return desc != null && desc.contains("Restricted");
+        }
+
         @Override
-        public MethodVisitor visitMethod(int access, String name, String desc, String signature,
-                String[] exceptions) {
-            if (currentClass != null && isDeprecated(access) && isPublic(access)) {
-                methods.add(getMethodKey(currentClass, name, desc));
+        public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+            if (currentClass != null) {
+                if (isRestrictedAnnotation(desc)) {
+                    classes.add(currentClass);
+                }
             }
             return null;
         }
 
         @Override
-        public FieldVisitor visitField(int access, String name, String desc, String signature,
+        public MethodVisitor visitMethod(int access, final String name, String desc, String signature,
+                String[] exceptions) {
+            if (currentClass != null && isPublic(access)) {
+                return new MethodVisitor(Opcodes.ASM5) {
+                    @Override
+                    public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+                        if (isRestrictedAnnotation(desc)) {
+                            methods.add(getMethodKey(currentClass, name, desc));
+                        }
+                        return null;
+                    }
+                };
+            }
+            return null;
+        }
+
+        @Override
+        public FieldVisitor visitField(int access, final String name, String desc, String signature,
                 Object value) {
-            if (currentClass != null && isDeprecated(access) && isPublic(access)) {
-                fields.add(getFieldKey(currentClass, name, desc));
+            if (currentClass != null && isPublic(access)) {
+                return new FieldVisitor(Opcodes.ASM5) {
+                    @Override
+                    public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+                        if (isRestrictedAnnotation(desc)) {
+                            fields.add(getFieldKey(currentClass, name, desc));
+                        }
+                        return null;
+                    }
+                };
             }
             return null;
         }
