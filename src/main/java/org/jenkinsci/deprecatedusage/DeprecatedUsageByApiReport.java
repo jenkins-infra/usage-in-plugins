@@ -25,22 +25,22 @@ public class DeprecatedUsageByApiReport extends Report {
     public DeprecatedUsageByApiReport(DeprecatedApi api, List<DeprecatedUsage> usages, File outputDir, String reportName) {
         super(api, usages, outputDir, reportName);
 
-        SortedSet<String> deprecatedClassesUsed = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-        SortedSet<String> deprecatedFieldsUsed = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-        SortedSet<String> deprecatedMethodsUsed = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        SortedMap<String, String> deprecatedClassesUsed = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        SortedMap<String, String> deprecatedFieldsUsed = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        SortedMap<String, String> deprecatedMethodsUsed = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
         // collect all deprecated methods, classes and fields used across all plugins
         for (DeprecatedUsage usage : usages) {
-            deprecatedClassesUsed.addAll(usage.getClasses());
-            deprecatedFieldsUsed.addAll(usage.getFields());
-            deprecatedMethodsUsed.addAll(usage.getMethods());
+            deprecatedClassesUsed.putAll(usage.getClasses());
+            deprecatedFieldsUsed.putAll(usage.getFields());
+            deprecatedMethodsUsed.putAll(usage.getMethods());
         }
 
         {
-            for (String className : deprecatedClassesUsed) {
+            for (String className : deprecatedClassesUsed.keySet()) {
                 SortedSet<String> usingPlugins = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
                 for (DeprecatedUsage usage : usages) {
-                    if (usage.getClasses().contains(className)) {
+                    if (usage.getClasses().containsKey(className)) {
                         usingPlugins.add(usage.getPlugin().artifactId);
                     }
                 }
@@ -49,10 +49,10 @@ public class DeprecatedUsageByApiReport extends Report {
         }
 
         {
-            for (String fieldName : deprecatedFieldsUsed) {
+            for (String fieldName : deprecatedFieldsUsed.keySet()) {
                 SortedSet<String> usingPlugins = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
                 for (DeprecatedUsage usage : usages) {
-                    if (usage.getFields().contains(fieldName)) {
+                    if (usage.getFields().containsKey(fieldName)) {
                         usingPlugins.add(usage.getPlugin().artifactId);
                     }
                 }
@@ -61,10 +61,10 @@ public class DeprecatedUsageByApiReport extends Report {
         }
 
         {
-            for (String methodName : deprecatedMethodsUsed) {
+            for (String methodName : deprecatedMethodsUsed.keySet()) {
                 SortedSet<String> usingPlugins = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
                 for (DeprecatedUsage usage : usages) {
-                    if (usage.getMethods().contains(methodName)) {
+                    if (usage.getMethods().containsKey(methodName)) {
                         usingPlugins.add(usage.getPlugin().artifactId);
                     }
                 }

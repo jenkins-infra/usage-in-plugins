@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.objectweb.asm.AnnotationVisitor;
@@ -29,10 +31,12 @@ public class DeprecatedApi {
 
     private static final char SEPARATOR = '#';
 
-    private final Set<String> classes = new LinkedHashSet<>();
-    private final Set<String> methods = new LinkedHashSet<>();
-    private final Set<String> fields = new LinkedHashSet<>();
+    private final Map<String, String> classes = new LinkedHashMap<>();
+    private final Map<String, String> methods = new LinkedHashMap<>();
+    private final Map<String, String> fields = new LinkedHashMap<>();
     private final ClassVisitor classVisitor = new CalledClassVisitor();
+
+    private String currentComponent;
 
     public static String getMethodKey(String className, String name, String desc) {
         return className + SEPARATOR + name + desc;
@@ -45,6 +49,7 @@ public class DeprecatedApi {
     }
 
     public void analyze(File coreFile) throws IOException {
+        currentComponent = coreFile.getName().substring(0, coreFile.getName().indexOf("."));
         final WarReader warReader = new WarReader(coreFile, false);
         try {
             String fileName = warReader.nextClass();
@@ -52,10 +57,14 @@ public class DeprecatedApi {
                 analyze(warReader.getInputStream());
                 fileName = warReader.nextClass();
             }
+        } catch(Exception e) {
+            System.out.println("skipping " + coreFile);
         } finally {
             warReader.close();
         }
-        classes.removeAll(IGNORED_DEPRECATED_CLASSES);
+        for (String ignored : IGNORED_DEPRECATED_CLASSES) {
+            classes.remove(ignored);
+        }
     }
 
     private void analyze(InputStream input) throws IOException {
@@ -64,15 +73,15 @@ public class DeprecatedApi {
                 ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
     }
 
-    public Set<String> getClasses() {
+    public Map<String, String> getClasses() {
         return  classes;
     }
 
-    public Set<String> getMethods() {
+    public Map<String, String> getMethods() {
         return methods;
     }
 
-    public Set<String> getFields() {
+    public Map<String, String> getFields() {
         return fields;
     }
 
@@ -112,7 +121,7 @@ public class DeprecatedApi {
         public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
             if (currentClass != null) {
                 if (isRestrictedAnnotation(desc)) {
-                    classes.add(currentClass);
+                    classes.put(currentClass, currentComponent);
                 }
             }
             return null;
@@ -126,7 +135,7 @@ public class DeprecatedApi {
                     @Override
                     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
                         if (isRestrictedAnnotation(desc)) {
-                            methods.add(getMethodKey(currentClass, name, desc));
+                            methods.put(getMethodKey(currentClass, name, desc), currentComponent);
                         }
                         return null;
                     }
@@ -143,7 +152,7 @@ public class DeprecatedApi {
                     @Override
                     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
                         if (isRestrictedAnnotation(desc)) {
-                            fields.add(getFieldKey(currentClass, name, desc));
+                            fields.put(getFieldKey(currentClass, name, desc), currentComponent);
                         }
                         return null;
                     }

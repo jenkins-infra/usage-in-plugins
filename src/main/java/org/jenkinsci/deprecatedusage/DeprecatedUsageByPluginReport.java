@@ -38,24 +38,26 @@ public class DeprecatedUsageByPluginReport extends Report {
 
             if (usage.getClasses().size() > 0) {
                 writer.append("<h3>Classes</h3><ul>");
-                for (String clazz : usage.getClasses()) {
-                    writer.append("<li>" + JavadocUtil.signatureToJenkinsdocLink(clazz) + "</li>\n");
+                for (String clazz : usage.getClasses().keySet()) {
+                    if (!usage.getPlugin().artifactId.equals(usage.getClasses().get(clazz))) {
+                        writer.append("<li>" + JavadocUtil.signatureToJenkinsdocLink(clazz) + " in " + usage.getClasses().get(clazz) + "</li>\n");
+                    }
                 }
                 writer.append("</ul>\n\n");
             }
 
             if (usage.getMethods().size() > 0) {
                 writer.append("<h3>Methods</h3><ul>");
-                for (String method : usage.getMethods()) {
-                    writer.append("<li>" + JavadocUtil.signatureToJenkinsdocLink(method) + "</li>\n");
+                for (String method : usage.getMethods().keySet()) {
+                    writer.append("<li>" + JavadocUtil.signatureToJenkinsdocLink(method) + " in " + usage.getMethods().get(method) + "</li>\n");
                 }
                 writer.append("</ul>\n\n");
             }
 
             if (usage.getFields().size() > 0) {
                 writer.append("<h3>Fields</h3><ul>");
-                for (String field : usage.getFields()) {
-                    writer.append("<li>" + JavadocUtil.signatureToJenkinsdocLink(field) + "</li>\n");
+                for (String field : usage.getFields().keySet()) {
+                    writer.append("<li>" + JavadocUtil.signatureToJenkinsdocLink(field) + " in " + usage.getFields().get(field) + "</li>\n");
                 }
                 writer.append("</ul>\n\n");
             }
@@ -71,19 +73,19 @@ public class DeprecatedUsageByPluginReport extends Report {
             plugin.put("plugin", usage.getPlugin().toString());
 
             JSONArray classes = new JSONArray();
-            for (String clazz : usage.getClasses()) {
+            for (String clazz : usage.getClasses().keySet()) {
                 classes.put(clazz);
             }
             plugin.put("classes", classes);
 
             JSONArray methods = new JSONArray();
-            for (String method : usage.getMethods()) {
+            for (String method : usage.getMethods().keySet()) {
                 methods.put(method);
             }
             plugin.put("methods", methods);
 
             JSONArray fields = new JSONArray();
-            for (String field : usage.getFields()) {
+            for (String field : usage.getFields().keySet()) {
                 fields.put(field);
             }
             plugin.put("fields", fields);

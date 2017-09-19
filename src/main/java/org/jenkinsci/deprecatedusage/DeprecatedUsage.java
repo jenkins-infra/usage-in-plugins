@@ -7,10 +7,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.objectweb.asm.ClassReader;
@@ -27,9 +29,9 @@ public class DeprecatedUsage {
     private final Plugin plugin;
     private final DeprecatedApi deprecatedApi;
 
-    private final Set<String> classes = new LinkedHashSet<>();
-    private final Set<String> methods = new LinkedHashSet<>();
-    private final Set<String> fields = new LinkedHashSet<>();
+    private final Map<String, String> classes = new LinkedHashMap<>();
+    private final Map<String, String> methods = new LinkedHashMap<>();
+    private final Map<String, String> fields = new LinkedHashMap<>();
     private final ClassVisitor indexerClassVisitor = new IndexerClassVisitor();
     private final ClassVisitor classVisitor = new CallersClassVisitor();
     private final Map<String, List<String>> superClassAndInterfacesByClass = new HashMap<>();
@@ -84,20 +86,29 @@ public class DeprecatedUsage {
 
     public Plugin getPlugin() { return plugin; }
 
-    public Set<String> getClasses() {
-        return new TreeSet<>(classes);
+    public Map<String, String> getClasses() {
+        return new TreeMap<>(classes);
     }
 
-    public Set<String> getMethods() {
-        return new TreeSet<>(methods);
+    public Map<String, String> getMethods() {
+        return new TreeMap<>(methods);
     }
 
-    public Set<String> getFields() {
-        return new TreeSet<>(fields);
+    public Map<String, String> getFields() {
+        return new TreeMap<>(fields);
     }
 
     public boolean hasDeprecatedUsage() {
-        return !classes.isEmpty() || !methods.isEmpty() || !fields.isEmpty();
+        return !getClasses().isEmpty() || !getMethods().isEmpty() || !getFields().isEmpty();
+    }
+
+    private boolean allEntriesForThisPlugin(Map<String, String> entries) {
+        for (Map.Entry<String, String> entry : entries.entrySet()) {
+            if (!entry.getValue().equals(plugin.artifactId)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     void methodCalled(String className, String name, String desc) {
@@ -110,12 +121,18 @@ public class DeprecatedUsage {
             if (!className.contains("jenkins") && !className.contains("hudson") && !className.contains("org/kohsuke")) {
                 return;
             }
-            if (deprecatedApi.getClasses().contains(className)) {
-                classes.add(className);
+            if (deprecatedApi.getClasses().containsKey(className)) {
+                String component = deprecatedApi.getClasses().get(className);
+                if (!component.equals(plugin.artifactId)) {
+                    classes.put(className, component);
+                }
             } else {
                 final String method = DeprecatedApi.getMethodKey(className, name, desc);
-                if (deprecatedApi.getMethods().contains(method)) {
-                    methods.add(method);
+                if (deprecatedApi.getMethods().containsKey(method)) {
+                    String component = deprecatedApi.getMethods().get(method);
+                    if (!component.equals(plugin.artifactId)) {
+                        methods.put(method, component);
+                    }
                 }
                 final List<String> superClassAndInterfaces = superClassAndInterfacesByClass
                         .get(className);
@@ -131,12 +148,18 @@ public class DeprecatedUsage {
     void fieldCalled(String className, String name, String desc) {
         // Calls to java and javax are ignored first
         if (!isJavaClass(className)) {
-            if (deprecatedApi.getClasses().contains(className)) {
-                classes.add(className);
+            if (deprecatedApi.getClasses().containsKey(className)) {
+                String component = deprecatedApi.getClasses().get(className);
+                if (!component.equals(plugin.artifactId)) {
+                    classes.put(className, component);
+                }
             } else {
                 final String field = DeprecatedApi.getFieldKey(className, name, desc);
-                if (deprecatedApi.getFields().contains(field)) {
-                    fields.add(field);
+                if (deprecatedApi.getFields().containsKey(field)) {
+                    String component = deprecatedApi.getFields().get(field);
+                    if (!component.equals(plugin.artifactId)) {
+                        fields.put(field, component);
+                    }
                 }
                 final List<String> superClassAndInterfaces = superClassAndInterfacesByClass
                         .get(className);

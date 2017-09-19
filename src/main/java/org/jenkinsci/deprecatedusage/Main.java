@@ -19,7 +19,7 @@ import java.util.zip.ZipException;
 public class Main {
     private static final String UPDATE_CENTER_URL =
     // "http://updates.jenkins-ci.org/experimental/update-center.json";
-    "http://updates.jenkins-ci.org/update-center.json";
+    "https://updates.jenkins.io/update-center.json";
 
     public static void main(String[] args) throws Exception {
         final long start = System.currentTimeMillis();
@@ -33,12 +33,15 @@ public class Main {
         final DeprecatedApi deprecatedApi = new DeprecatedApi();
         deprecatedApi.analyze(coreFile);
 
+        for (JenkinsFile pluginFile : updateCenter.getPlugins()) {
+            deprecatedApi.analyze(pluginFile.getFile());
+        }
+
         System.out.println("Analyzing deprecated usage in plugins");
         final List<DeprecatedUsage> deprecatedUsages = analyzeDeprecatedUsage(updateCenter.getPlugins(), deprecatedApi);
 
         Report[] reports = new Report[] {
                 new DeprecatedUsageByPluginReport(deprecatedApi, deprecatedUsages, new File("output"), "usage-by-plugin"),
-                new DeprecatedUnusedApiReport(deprecatedApi, deprecatedUsages, new File("output"), "deprecated-and-unused"),
                 new DeprecatedUsageByApiReport(deprecatedApi, deprecatedUsages, new File("output"), "usage-by-api")
         };
 
