@@ -10,6 +10,7 @@ import java.net.URL;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.HashSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -36,17 +37,19 @@ public class JenkinsFile {
     private final String version;
     private final URL url;
     private final String wiki;
+    private final HashSet<String> dependencies;
     private File file;
     private final File versionsRootDirectory;
     private Future<?> downloadFuture;
 
-    public JenkinsFile(String name, String version, String url, String wiki)
+    public JenkinsFile(String name, String version, String url, String wiki, HashSet<String> dependencies)
             throws MalformedURLException {
         super();
         this.name = name;
         this.version = version;
         this.url = new URL(url);
         this.wiki = wiki;
+        this.dependencies = dependencies;
         final String fileName = url.substring(url.lastIndexOf('/'));
         this.versionsRootDirectory = new File(WORK_DIRECTORY, name);
         this.file = new File(versionsRootDirectory, version + '/' + fileName);
@@ -140,5 +143,9 @@ public class JenkinsFile {
     @Override
     public String toString() {
         return file.getName();
+    }
+
+    public boolean isDependentOn(JenkinsFile plugin) {
+        return dependencies.contains(plugin.getName());
     }
 }

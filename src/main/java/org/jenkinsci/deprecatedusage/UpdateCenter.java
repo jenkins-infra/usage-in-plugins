@@ -6,13 +6,11 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.xml.sax.SAXException;
@@ -67,8 +65,15 @@ public class UpdateCenter {
         } else {
             wiki = null;
         }
+        final HashSet<String> dependencies = new HashSet<>();
+        if (jsonObject.has("dependencies")) {
+            JSONArray jsonDependencies = jsonObject.getJSONArray("dependencies");
+            for (int i = 0; i < jsonDependencies.length(); i++) {
+                dependencies.add(jsonDependencies.getJSONObject(i).getString("name"));
+            }
+        }
         return new JenkinsFile(jsonObject.getString("name"), jsonObject.getString("version"),
-                jsonObject.getString("url"), wiki);
+                jsonObject.getString("url"), wiki, dependencies);
     }
 
     public void download() throws Exception {
