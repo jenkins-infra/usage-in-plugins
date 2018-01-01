@@ -85,7 +85,6 @@ public class JavadocUtilTest {
 
     @Test
     public void testLinking() {
-        assertEquals(expectedLink, new JavadocUtil().signatureToJenkinsdocUrl(signature));
-        System.out.println( new JavadocUtil().signatureToJenkinsdocUrl(signature));
+        assertEquals(expectedLink, JavadocUtil.CORE.signatureToJenkinsdocUrl(signature));
     }
 }

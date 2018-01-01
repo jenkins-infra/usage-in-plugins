@@ -17,5 +17,7 @@ public interface Analysis {
     boolean areSignatureFiltered();
 
     boolean skipIfNoDeprecatedApis();
+
+    JavadocUtil getJavadocUtil();
 }
 

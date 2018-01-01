@@ -38,4 +38,9 @@ public class JenkinsCoreAnalysis implements Analysis {
     public boolean skipIfNoDeprecatedApis() {
         return false;
     }
+
+    @Override
+    public JavadocUtil getJavadocUtil() {
+        return JavadocUtil.CORE;
+    }
 }

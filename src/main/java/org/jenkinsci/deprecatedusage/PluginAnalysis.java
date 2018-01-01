@@ -52,4 +52,9 @@ public class PluginAnalysis implements Analysis {
     public boolean skipIfNoDeprecatedApis() {
         return true;
     }
+
+    @Override
+    public JavadocUtil getJavadocUtil() {
+        return JavadocUtil.PLUGINS;
+    }
 }

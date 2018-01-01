@@ -9,16 +9,31 @@ import java.util.regex.Pattern;
 
 public class JavadocUtil {
 
-    private static final String JAVADOC_URL = "http://javadoc.jenkins.io/";
+    private static final String CORE_JAVADOC_URL = "http://javadoc.jenkins.io/";
     // from https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.3.2
     // and  https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.3.3
     private static final String MARKER_PATTERN = "[LBCDFIJSZV\\[]";
+
+    public static final JavadocUtil CORE = new JavadocUtil(CORE_JAVADOC_URL, true);
+    public static final JavadocUtil PLUGINS = new JavadocUtil(null, false);
+
+    private final String url;
+    private final boolean includeLinks;
+
+    private JavadocUtil(String url, boolean includeLinks) {
+        this.url = url;
+        this.includeLinks = includeLinks;
+    }
 
     public String signatureToJenkinsdocLink(String fullSignature) {
         return signatureToJenkinsdocLink(fullSignature, fullSignature);
     }
 
-    public String signatureToJenkinsdocLink(String fullSignature, String label) {
+    String signatureToJenkinsdocLink(String fullSignature, String label) {
+        if (!includeLinks) {
+            return label;
+        }
+
         String url = signatureToJenkinsdocUrl(fullSignature);
 
         label = label.replace("<", "&lt;").replace(">", "&gt;");
@@ -37,11 +52,11 @@ public class JavadocUtil {
 
         if (isClass) {
             // transform package and class names, then return
-            return JAVADOC_URL + fullSignature.replace("$", ".") + ".html";
+            return CORE_JAVADOC_URL + fullSignature.replace("$", ".") + ".html";
         }
 
         if (isField) {
-            return JAVADOC_URL + fullSignature.replace("$", ".").replace("#", ".html#");
+            return CORE_JAVADOC_URL + fullSignature.replace("$", ".").replace("#", ".html#");
         }
 
         String packageName = "";
@@ -76,7 +91,7 @@ public class JavadocUtil {
             arguments = StringUtils.join(processedArgs.toArray(), "-");
         }
 
-        return JAVADOC_URL + packageName + '/' + className + ".html#" + methodName + "-" + arguments + "-";
+        return CORE_JAVADOC_URL + packageName + '/' + className + ".html#" + methodName + "-" + arguments + "-";
     }
 
     private static String scanParameterToHuman(Scanner scanner) {
