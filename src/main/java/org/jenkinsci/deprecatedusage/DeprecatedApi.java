@@ -63,6 +63,10 @@ public class DeprecatedApi {
                 ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
     }
 
+    public boolean hasDeprecatedApis() {
+        return !classes.isEmpty() || !methods.isEmpty() || !fields.isEmpty();
+    }
+
     public Set<String> getClasses() {
         return  classes;
     }

@@ -33,4 +33,9 @@ public class JenkinsCoreAnalysis implements Analysis {
     public boolean areSignatureFiltered() {
         return true;
     }
+
+    @Override
+    public boolean skipIfNoDeprecatedApis() {
+        return false;
+    }
 }

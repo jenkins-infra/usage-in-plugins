@@ -15,5 +15,7 @@ public interface Analysis {
     File getOutputDirectory(String baseDir);
 
     boolean areSignatureFiltered();
+
+    boolean skipIfNoDeprecatedApis();
 }
 

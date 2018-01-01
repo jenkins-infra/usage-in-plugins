@@ -43,6 +43,10 @@ public class Main {
         final DeprecatedApi deprecatedApi = new DeprecatedApi();
         deprecatedApi.analyze(analyzedFile);
 
+        if (analysis.skipIfNoDeprecatedApis() && !deprecatedApi.hasDeprecatedApis()) {
+            System.out.println("No deprecated api found in " + analysis.getAnalyzedFileName());
+            return;
+        }
         System.out.println("Analyzing deprecated usage in " + analysis.getDependentFilesName());
         final List<DeprecatedUsage> deprecatedUsages = analyzeDeprecatedUsage(analysis.getDependentFiles(updateCenter), deprecatedApi);
 

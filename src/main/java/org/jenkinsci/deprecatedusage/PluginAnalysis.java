@@ -43,4 +43,9 @@ public class PluginAnalysis implements Analysis {
     public boolean areSignatureFiltered() {
         return false;
     }
+
+    @Override
+    public boolean skipIfNoDeprecatedApis() {
+        return true;
+    }
 }
