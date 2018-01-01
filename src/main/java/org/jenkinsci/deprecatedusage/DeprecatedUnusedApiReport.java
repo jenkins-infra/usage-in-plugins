@@ -10,8 +10,11 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 public class DeprecatedUnusedApiReport extends Report {
-    public DeprecatedUnusedApiReport(DeprecatedApi api, List<DeprecatedUsage> usages, File outputDir, String reportName) {
+    private final boolean onlyRelevantSignatures;
+    public DeprecatedUnusedApiReport(DeprecatedApi api, List<DeprecatedUsage> usages, File outputDir, String reportName,
+                                     boolean onlyRelevantSignatures) {
         super(api, usages, outputDir, reportName);
+        this.onlyRelevantSignatures = onlyRelevantSignatures;
     }
 
     protected void generateHtmlReport(Writer writer) throws IOException {
@@ -127,6 +130,9 @@ public class DeprecatedUnusedApiReport extends Report {
     }
 
     private boolean isRelevantSignature(String signature) {
+        if (!onlyRelevantSignatures) {
+            return true;
+        }
         if (signature.contains("jenkins")) {
             return true;
         }

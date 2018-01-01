@@ -28,4 +28,9 @@ public class JenkinsCoreAnalysis implements Analysis {
     public File getOutputDirectory(String baseDir) {
         return new File(baseDir);
     }
+
+    @Override
+    public boolean areSignatureFiltered() {
+        return true;
+    }
 }

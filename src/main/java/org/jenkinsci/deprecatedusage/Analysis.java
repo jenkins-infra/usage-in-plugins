@@ -13,5 +13,7 @@ public interface Analysis {
     List<JenkinsFile> getDependentFiles(UpdateCenter updateCenter);
 
     File getOutputDirectory(String baseDir);
+
+    boolean areSignatureFiltered();
 }
 

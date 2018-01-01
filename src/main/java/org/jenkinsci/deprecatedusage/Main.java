@@ -49,7 +49,7 @@ public class Main {
         File outputDir = analysis.getOutputDirectory("output");
         Report[] reports = new Report[] {
                 new DeprecatedUsageByPluginReport(deprecatedApi, deprecatedUsages, outputDir, "usage-by-plugin"),
-                new DeprecatedUnusedApiReport(deprecatedApi, deprecatedUsages, outputDir, "deprecated-and-unused"),
+                new DeprecatedUnusedApiReport(deprecatedApi, deprecatedUsages, outputDir, "deprecated-and-unused", analysis.areSignatureFiltered()),
                 new DeprecatedUsageByApiReport(deprecatedApi, deprecatedUsages, outputDir, "usage-by-api")
         };
 

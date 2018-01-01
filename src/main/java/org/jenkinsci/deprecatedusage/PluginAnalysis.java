@@ -38,4 +38,9 @@ public class PluginAnalysis implements Analysis {
     public File getOutputDirectory(String baseDir) {
         return new File(baseDir, plugin.getName());
     }
+
+    @Override
+    public boolean areSignatureFiltered() {
+        return false;
+    }
 }
