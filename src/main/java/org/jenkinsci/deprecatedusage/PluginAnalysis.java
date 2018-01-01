@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 public class PluginAnalysis implements Analysis {
 
     private final JenkinsFile plugin;
+    private List<JenkinsFile> dependencies;
 
     public PluginAnalysis(JenkinsFile plugin) {
         this.plugin = plugin;
@@ -29,9 +30,12 @@ public class PluginAnalysis implements Analysis {
 
     @Override
     public List<JenkinsFile> getDependentFiles(UpdateCenter updateCenter) {
-        return updateCenter.getPlugins().stream()
-            .filter(p -> p.isDependentOn(plugin))
-            .collect(Collectors.toList());
+        if (dependencies == null) {
+            return updateCenter.getPlugins().stream()
+                .filter(p -> p.isDependentOn(plugin))
+                .collect(Collectors.toList());
+        }
+        return dependencies;
     }
 
     @Override
