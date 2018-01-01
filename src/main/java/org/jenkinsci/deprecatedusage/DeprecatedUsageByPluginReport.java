@@ -20,12 +20,7 @@ public class DeprecatedUsageByPluginReport extends Report {
     }
 
     protected void generateHtmlReport(Writer writer) throws IOException {
-        SortedSet<DeprecatedUsage> set = new TreeSet<>(new Comparator<DeprecatedUsage>() {
-            @Override
-            public int compare(DeprecatedUsage o1, DeprecatedUsage o2) {
-                return o1.getPlugin().compareTo(o2.getPlugin());
-            }
-        });
+        SortedSet<DeprecatedUsage> set = new TreeSet<>(Comparator.comparing(DeprecatedUsage::getPlugin));
         set.addAll(usages);
 
         writer.append("<h1>Deprecated Usage By Plugin</h1>");
@@ -34,12 +29,12 @@ public class DeprecatedUsageByPluginReport extends Report {
             if (!usage.hasDeprecatedUsage()) {
                 continue;
             }
-            writer.append("<div class='plugin'><h2 id='" + usage.getPlugin().artifactId +"'><a href='" + usage.getPlugin().getUrl() + "'>" + usage.getPlugin().toString() + "</a></h2>");
+            writer.append("<div class='plugin'><h2 id='").append(usage.getPlugin().artifactId).append("'><a href='").append(usage.getPlugin().getUrl()).append("'>").append(usage.getPlugin().toString()).append("</a></h2>");
 
             if (usage.getClasses().size() > 0) {
                 writer.append("<h3>Classes</h3><ul>");
                 for (String clazz : usage.getClasses()) {
-                    writer.append("<li>" + JavadocUtil.signatureToJenkinsdocLink(clazz) + "</li>\n");
+                    writer.append("<li>").append(JavadocUtil.signatureToJenkinsdocLink(clazz)).append("</li>\n");
                 }
                 writer.append("</ul>\n\n");
             }
@@ -47,7 +42,7 @@ public class DeprecatedUsageByPluginReport extends Report {
             if (usage.getMethods().size() > 0) {
                 writer.append("<h3>Methods</h3><ul>");
                 for (String method : usage.getMethods()) {
-                    writer.append("<li>" + JavadocUtil.signatureToJenkinsdocLink(method) + "</li>\n");
+                    writer.append("<li>").append(JavadocUtil.signatureToJenkinsdocLink(method)).append("</li>\n");
                 }
                 writer.append("</ul>\n\n");
             }
@@ -55,7 +50,7 @@ public class DeprecatedUsageByPluginReport extends Report {
             if (usage.getFields().size() > 0) {
                 writer.append("<h3>Fields</h3><ul>");
                 for (String field : usage.getFields()) {
-                    writer.append("<li>" + JavadocUtil.signatureToJenkinsdocLink(field) + "</li>\n");
+                    writer.append("<li>").append(JavadocUtil.signatureToJenkinsdocLink(field)).append("</li>\n");
                 }
                 writer.append("</ul>\n\n");
             }

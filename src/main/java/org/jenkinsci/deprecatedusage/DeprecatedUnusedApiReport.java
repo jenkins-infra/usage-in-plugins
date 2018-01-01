@@ -32,7 +32,7 @@ public class DeprecatedUnusedApiReport extends Report {
                         continue CLASSES;
                     }
                 }
-                writer.append("<li>" + JavadocUtil.signatureToJenkinsdocLink(deprecatedClass) + "</li>\n");
+                writer.append("<li>").append(JavadocUtil.signatureToJenkinsdocLink(deprecatedClass)).append("</li>\n");
             }
             writer.append("</div>");
         }
@@ -49,7 +49,7 @@ public class DeprecatedUnusedApiReport extends Report {
                         continue FIELDS;
                     }
                 }
-                writer.append("<li>" + JavadocUtil.signatureToJenkinsdocLink(deprecatedField) + "</li>\n");
+                writer.append("<li>").append(JavadocUtil.signatureToJenkinsdocLink(deprecatedField)).append("</li>\n");
             }
             writer.append("</div>");
         }
@@ -66,7 +66,7 @@ public class DeprecatedUnusedApiReport extends Report {
                         continue METHODS;
                     }
                 }
-                writer.append("<li>" + JavadocUtil.signatureToJenkinsdocLink(deprecatedMethod) + "</li>\n");
+                writer.append("<li>").append(JavadocUtil.signatureToJenkinsdocLink(deprecatedMethod)).append("</li>\n");
             }
             writer.append("</div>");
         }

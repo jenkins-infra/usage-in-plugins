@@ -52,15 +52,12 @@ public class DeprecatedUsage {
             throws IOException {
         // recent plugins package their classes as a jar file with the same name as the war file in
         // WEB-INF/lib/ while older plugins were packaging their classes in WEB-INF/classes/
-        final WarReader warReader = new WarReader(pluginFile, true);
-        try {
+        try (WarReader warReader = new WarReader(pluginFile, true)) {
             String fileName = warReader.nextClass();
             while (fileName != null) {
                 analyze(warReader.getInputStream(), aClassVisitor);
                 fileName = warReader.nextClass();
             }
-        } finally {
-            warReader.close();
         }
 
         // final InputStream input = new FileInputStream(pluginFile);

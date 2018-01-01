@@ -9,7 +9,6 @@ import java.util.zip.ZipInputStream;
 
 public class JarReader implements Closeable {
     private final ZipInputStream zipInputStream;
-    private ZipEntry entry;
 
     public JarReader(InputStream input) throws IOException {
         super();
@@ -17,7 +16,7 @@ public class JarReader implements Closeable {
     }
 
     public String nextClass() throws IOException {
-        entry = zipInputStream.getNextEntry();
+        ZipEntry entry = zipInputStream.getNextEntry();
         while (entry != null && !entry.getName().endsWith(".class")) {
             entry = zipInputStream.getNextEntry();
         }

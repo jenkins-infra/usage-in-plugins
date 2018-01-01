@@ -36,13 +36,8 @@ public class UpdateCenter {
             final JenkinsFile plugin = parse(jsonPlugin);
             plugins.add(plugin);
         }
-        final Comparator<JenkinsFile> comparator = new Comparator<JenkinsFile>() {
-            @Override
-            public int compare(JenkinsFile o1, JenkinsFile o2) {
-                return o1.getName().compareToIgnoreCase(o2.getName());
-            }
-        };
-        Collections.sort(plugins, comparator);
+        final Comparator<JenkinsFile> comparator = (o1, o2) -> o1.getName().compareToIgnoreCase(o2.getName());
+        plugins.sort(comparator);
     }
 
     private String getUpdateCenterJson() throws IOException, MalformedURLException {

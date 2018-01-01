@@ -44,15 +44,12 @@ public class DeprecatedApi {
     }
 
     public void analyze(File coreFile) throws IOException {
-        final WarReader warReader = new WarReader(coreFile, false);
-        try {
+        try (WarReader warReader = new WarReader(coreFile, false)) {
             String fileName = warReader.nextClass();
             while (fileName != null) {
                 analyze(warReader.getInputStream());
                 fileName = warReader.nextClass();
             }
-        } finally {
-            warReader.close();
         }
         classes.removeAll(IGNORED_DEPRECATED_CLASSES);
     }

@@ -91,23 +91,20 @@ public class Main {
                 .newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         final List<Future<DeprecatedUsage>> futures = new ArrayList<>(plugins.size());
         for (final JenkinsFile plugin : plugins) {
-            final Callable<DeprecatedUsage> task = new Callable<DeprecatedUsage>() {
-                @Override
-                public DeprecatedUsage call() throws IOException {
-                    final DeprecatedUsage deprecatedUsage = new DeprecatedUsage(plugin.getName(),
-                            plugin.getVersion(), deprecatedApi);
-                    try {
-                        deprecatedUsage.analyze(plugin.getFile());
-                    } catch (final EOFException | ZipException e) {
-                        System.out.println("deleting " + plugin.getFile().getName() + " and skipping, because "
-                                + e.toString());
-                        plugin.getFile().delete();
-                    } catch (final Exception e) {
-                        System.out.println(e.toString() + " on " + plugin.getFile().getName());
-                        e.printStackTrace();
-                    }
-                    return deprecatedUsage;
+            final Callable<DeprecatedUsage> task = () -> {
+                final DeprecatedUsage deprecatedUsage = new DeprecatedUsage(plugin.getName(),
+                        plugin.getVersion(), deprecatedApi);
+                try {
+                    deprecatedUsage.analyze(plugin.getFile());
+                } catch (final EOFException | ZipException e) {
+                    System.out.println("deleting " + plugin.getFile().getName() + " and skipping, because "
+                            + e.toString());
+                    plugin.getFile().delete();
+                } catch (final Exception e) {
+                    System.out.println(e.toString() + " on " + plugin.getFile().getName());
+                    e.printStackTrace();
                 }
+                return deprecatedUsage;
             };
             futures.add(executorService.submit(task));
         }

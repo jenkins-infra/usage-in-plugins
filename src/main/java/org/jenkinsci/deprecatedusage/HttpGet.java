@@ -34,8 +34,7 @@ public class HttpGet {
             connection.setReadTimeout(READ_TIMEOUT);
         }
         try {
-            final InputStream input = connection.getInputStream();
-            try {
+            try (InputStream input = connection.getInputStream()) {
                 final byte[] buffer = new byte[50 * 1024];
                 int len = input.read(buffer);
                 while (len != -1) {
@@ -43,8 +42,6 @@ public class HttpGet {
                     len = input.read(buffer);
                 }
             } finally {
-                input.close();
-
                 if (connection instanceof HttpURLConnection) {
                     final InputStream error = ((HttpURLConnection) connection).getErrorStream();
                     if (error != null) {
