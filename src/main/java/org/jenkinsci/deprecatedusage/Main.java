@@ -8,6 +8,8 @@ import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -29,12 +31,28 @@ public class Main {
         System.out.println("All files are up to date (" + updateCenter.getPlugins().size() + " plugins)");
 
         createReport(updateCenter, new JenkinsCoreAnalysis());
-        for(JenkinsFile plugin : updateCenter.getPlugins()) {
-            createReport(updateCenter, new PluginAnalysis(plugin));
-        }
+        final Map<String, Exception> errors = createPluginsReport(updateCenter);
 
+        if (!errors.isEmpty()) {
+            System.out.println();
+            System.out.println("Encountered errors while analyzing plugins");
+            errors.forEach((key, value) -> System.out.println("- " + key + " : " + value));
+            System.out.println();
+        }
         System.out.println("duration : " + (System.currentTimeMillis() - start) + " ms at "
                 + DateFormat.getDateTimeInstance().format(new Date()));
+    }
+
+    private static Map<String, Exception> createPluginsReport(UpdateCenter updateCenter) {
+        final Map<String, Exception> errors = new TreeMap<>();
+        for(JenkinsFile plugin : updateCenter.getPlugins()) {
+            try {
+                createReport(updateCenter, new PluginAnalysis(plugin));
+            } catch (Exception ex) {
+                errors.put(plugin.getName(), ex);
+            }
+        }
+        return errors;
     }
 
     private static void createReport(UpdateCenter updateCenter, Analysis analysis) throws IOException, InterruptedException, ExecutionException {
@@ -42,7 +60,6 @@ public class Main {
         final File analyzedFile = analysis.getAnalyzedFile(updateCenter).getFile();
         final DeprecatedApi deprecatedApi = new DeprecatedApi();
         deprecatedApi.analyze(analyzedFile);
-
         if (analysis.skipIfNoDeprecatedApis() && !deprecatedApi.hasDeprecatedApis()) {
             System.out.println("No deprecated api found in " + analysis.getAnalyzedFileName());
             return;
