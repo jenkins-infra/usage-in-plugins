@@ -73,10 +73,11 @@ public class Main {
         final List<DeprecatedUsage> deprecatedUsages = analyzeDeprecatedUsage(analysis.getDependentFiles(updateCenter), deprecatedApi);
 
         File outputDir = analysis.getOutputDirectory("output");
+        JavadocUtil javadocUtil = new JavadocUtil();
         Report[] reports = new Report[] {
-                new DeprecatedUsageByPluginReport(deprecatedApi, deprecatedUsages, outputDir, "usage-by-plugin"),
-                new DeprecatedUnusedApiReport(deprecatedApi, deprecatedUsages, outputDir, "deprecated-and-unused", analysis.areSignatureFiltered()),
-                new DeprecatedUsageByApiReport(deprecatedApi, deprecatedUsages, outputDir, "usage-by-api")
+                new DeprecatedUsageByPluginReport(deprecatedApi, deprecatedUsages, outputDir, "usage-by-plugin", javadocUtil),
+                new DeprecatedUnusedApiReport(deprecatedApi, deprecatedUsages, outputDir, "deprecated-and-unused", javadocUtil, analysis.areSignatureFiltered()),
+                new DeprecatedUsageByApiReport(deprecatedApi, deprecatedUsages, outputDir, "usage-by-api", javadocUtil)
         };
 
         for (Report report : reports) {

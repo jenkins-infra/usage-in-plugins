@@ -15,8 +15,8 @@ import java.util.TreeSet;
  * This report shows deprecated APIs in Jenkins and Stapler that are used by plugins, grouped by the plugins, listing APIs.
  */
 public class DeprecatedUsageByPluginReport extends Report {
-    public DeprecatedUsageByPluginReport(DeprecatedApi api, List<DeprecatedUsage> usages, File outputDir, String reportName) {
-        super(api, usages, outputDir, reportName);
+    public DeprecatedUsageByPluginReport(DeprecatedApi api, List<DeprecatedUsage> usages, File outputDir, String reportName, JavadocUtil javadocUtil) {
+        super(api, usages, outputDir, reportName, javadocUtil);
     }
 
     protected void generateHtmlReport(Writer writer) throws IOException {
@@ -34,7 +34,7 @@ public class DeprecatedUsageByPluginReport extends Report {
             if (usage.getClasses().size() > 0) {
                 writer.append("<h3>Classes</h3><ul>");
                 for (String clazz : usage.getClasses()) {
-                    writer.append("<li>").append(JavadocUtil.signatureToJenkinsdocLink(clazz)).append("</li>\n");
+                    writer.append("<li>").append(javadocUtil.signatureToJenkinsdocLink(clazz)).append("</li>\n");
                 }
                 writer.append("</ul>\n\n");
             }
@@ -42,7 +42,7 @@ public class DeprecatedUsageByPluginReport extends Report {
             if (usage.getMethods().size() > 0) {
                 writer.append("<h3>Methods</h3><ul>");
                 for (String method : usage.getMethods()) {
-                    writer.append("<li>").append(JavadocUtil.signatureToJenkinsdocLink(method)).append("</li>\n");
+                    writer.append("<li>").append(javadocUtil.signatureToJenkinsdocLink(method)).append("</li>\n");
                 }
                 writer.append("</ul>\n\n");
             }
@@ -50,7 +50,7 @@ public class DeprecatedUsageByPluginReport extends Report {
             if (usage.getFields().size() > 0) {
                 writer.append("<h3>Fields</h3><ul>");
                 for (String field : usage.getFields()) {
-                    writer.append("<li>").append(JavadocUtil.signatureToJenkinsdocLink(field)).append("</li>\n");
+                    writer.append("<li>").append(javadocUtil.signatureToJenkinsdocLink(field)).append("</li>\n");
                 }
                 writer.append("</ul>\n\n");
             }

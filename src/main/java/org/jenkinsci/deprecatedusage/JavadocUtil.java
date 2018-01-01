@@ -14,11 +14,11 @@ public class JavadocUtil {
     // and  https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.3.3
     private static final String MARKER_PATTERN = "[LBCDFIJSZV\\[]";
 
-    public static String signatureToJenkinsdocLink(String fullSignature) {
+    public String signatureToJenkinsdocLink(String fullSignature) {
         return signatureToJenkinsdocLink(fullSignature, fullSignature);
     }
 
-    public static String signatureToJenkinsdocLink(String fullSignature, String label) {
+    public String signatureToJenkinsdocLink(String fullSignature, String label) {
         String url = signatureToJenkinsdocUrl(fullSignature);
 
         label = label.replace("<", "&lt;").replace(">", "&gt;");
@@ -30,7 +30,7 @@ public class JavadocUtil {
         return "<a href='" + url+ "'>" + label + "</a>";
     }
 
-    public static String signatureToJenkinsdocUrl(String fullSignature) {
+    public String signatureToJenkinsdocUrl(String fullSignature) {
 
         boolean isClass = !fullSignature.contains("#");
         boolean isField = !isClass && !fullSignature.contains("(");
@@ -118,10 +118,6 @@ public class JavadocUtil {
         if (marker.equals("Z")) {
             return "boolean";
         }
-
-
-
-
 
         return marker;
     }

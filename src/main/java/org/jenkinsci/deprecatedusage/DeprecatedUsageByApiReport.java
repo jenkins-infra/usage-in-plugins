@@ -22,8 +22,8 @@ public class DeprecatedUsageByApiReport extends Report {
     private SortedMap<String, SortedSet<String>> deprecatedMethodsToPlugins = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
 
-    public DeprecatedUsageByApiReport(DeprecatedApi api, List<DeprecatedUsage> usages, File outputDir, String reportName) {
-        super(api, usages, outputDir, reportName);
+    public DeprecatedUsageByApiReport(DeprecatedApi api, List<DeprecatedUsage> usages, File outputDir, String reportName, JavadocUtil javadocUtil) {
+        super(api, usages, outputDir, reportName, javadocUtil);
 
         SortedSet<String> deprecatedClassesUsed = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         SortedSet<String> deprecatedFieldsUsed = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
@@ -80,7 +80,7 @@ public class DeprecatedUsageByApiReport extends Report {
             writer.append("<h2>Classes</h2>\n");
             for (Map.Entry<String, SortedSet<String>> entry : deprecatedClassesToPlugins.entrySet()) {
                 writer.append("<div class='class'>\n");
-                writer.append("<h3 id='").append(entry.getKey().replaceAll("[^a-zA-Z0-9-]", "_")).append("'>").append(JavadocUtil.signatureToJenkinsdocLink(entry.getKey())).append("</h3><ul>\n");
+                writer.append("<h3 id='").append(entry.getKey().replaceAll("[^a-zA-Z0-9-]", "_")).append("'>").append(javadocUtil.signatureToJenkinsdocLink(entry.getKey())).append("</h3><ul>\n");
                 for (String plugin : entry.getValue()) {
                     writer.append("<li><a href='http://plugins.jenkins.io/").append(plugin).append("'>").append(plugin).append("</a></li>\n");
                 }
@@ -92,7 +92,7 @@ public class DeprecatedUsageByApiReport extends Report {
             writer.append("<h2>Fields</h2>\n");
             for (Map.Entry<String, SortedSet<String>> entry : deprecatedFieldsToPlugins.entrySet()) {
                 writer.append("<div class='field'>\n");
-                writer.append("<h3 id='").append(entry.getKey().replaceAll("[^a-zA-Z0-9-]", "_")).append("'>").append(JavadocUtil.signatureToJenkinsdocLink(entry.getKey())).append("</h3><ul>\n");
+                writer.append("<h3 id='").append(entry.getKey().replaceAll("[^a-zA-Z0-9-]", "_")).append("'>").append(javadocUtil.signatureToJenkinsdocLink(entry.getKey())).append("</h3><ul>\n");
                 for (String plugin : entry.getValue()) {
                     writer.append("<li><a href='http://plugins.jenkins.io/").append(plugin).append("'>").append(plugin).append("</a></li>\n");
                 }
@@ -104,7 +104,7 @@ public class DeprecatedUsageByApiReport extends Report {
             writer.append("<h2>Methods</h2>\n");
             for (Map.Entry<String, SortedSet<String>> entry : deprecatedMethodsToPlugins.entrySet()) {
                 writer.append("<div class='method'>\n");
-                writer.append("<h3 id='").append(entry.getKey().replaceAll("[^a-zA-Z0-9-]", "_")).append("'>").append(JavadocUtil.signatureToJenkinsdocLink(entry.getKey())).append("</h3><ul>\n");
+                writer.append("<h3 id='").append(entry.getKey().replaceAll("[^a-zA-Z0-9-]", "_")).append("'>").append(javadocUtil.signatureToJenkinsdocLink(entry.getKey())).append("</h3><ul>\n");
                 for (String plugin : entry.getValue()) {
                     writer.append("<li><a href='http://plugins.jenkins.io/").append(plugin).append("'>").append(plugin).append("</a></li>\n");
                 }

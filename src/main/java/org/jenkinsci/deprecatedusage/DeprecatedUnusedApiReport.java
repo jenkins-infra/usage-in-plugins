@@ -11,9 +11,8 @@ import java.util.TreeSet;
 
 public class DeprecatedUnusedApiReport extends Report {
     private final boolean onlyRelevantSignatures;
-    public DeprecatedUnusedApiReport(DeprecatedApi api, List<DeprecatedUsage> usages, File outputDir, String reportName,
-                                     boolean onlyRelevantSignatures) {
-        super(api, usages, outputDir, reportName);
+    public DeprecatedUnusedApiReport(DeprecatedApi api, List<DeprecatedUsage> usages, File outputDir, String reportName, JavadocUtil javadocUtil, boolean onlyRelevantSignatures) {
+        super(api, usages, outputDir, reportName, javadocUtil);
         this.onlyRelevantSignatures = onlyRelevantSignatures;
     }
 
@@ -32,7 +31,7 @@ public class DeprecatedUnusedApiReport extends Report {
                         continue CLASSES;
                     }
                 }
-                writer.append("<li>").append(JavadocUtil.signatureToJenkinsdocLink(deprecatedClass)).append("</li>\n");
+                writer.append("<li>").append(javadocUtil.signatureToJenkinsdocLink(deprecatedClass)).append("</li>\n");
             }
             writer.append("</div>");
         }
@@ -49,7 +48,7 @@ public class DeprecatedUnusedApiReport extends Report {
                         continue FIELDS;
                     }
                 }
-                writer.append("<li>").append(JavadocUtil.signatureToJenkinsdocLink(deprecatedField)).append("</li>\n");
+                writer.append("<li>").append(javadocUtil.signatureToJenkinsdocLink(deprecatedField)).append("</li>\n");
             }
             writer.append("</div>");
         }
@@ -66,7 +65,7 @@ public class DeprecatedUnusedApiReport extends Report {
                         continue METHODS;
                     }
                 }
-                writer.append("<li>").append(JavadocUtil.signatureToJenkinsdocLink(deprecatedMethod)).append("</li>\n");
+                writer.append("<li>").append(javadocUtil.signatureToJenkinsdocLink(deprecatedMethod)).append("</li>\n");
             }
             writer.append("</div>");
         }
