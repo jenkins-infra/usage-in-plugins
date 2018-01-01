@@ -59,7 +59,12 @@ public class JavadocUtil {
 
         String className = classMethodAndArguments.substring(0, classMethodAndArguments.indexOf("#"));
         className = className.replace("$", ".");
-        String methodName = classMethodAndArguments.substring(classMethodAndArguments.indexOf("#") + 1, classMethodAndArguments.indexOf("(")).replace("<init>", className);
+        String lastPartOfClassName = className;
+        int startOfLastPartOfClassName = className.lastIndexOf('.');
+        if (startOfLastPartOfClassName > 0) {
+            lastPartOfClassName = className.substring(startOfLastPartOfClassName + 1);
+        }
+        String methodName = classMethodAndArguments.substring(classMethodAndArguments.indexOf("#") + 1, classMethodAndArguments.indexOf("(")).replace("<init>", lastPartOfClassName);
         String arguments = classMethodAndArguments.substring(classMethodAndArguments.indexOf("(") + 1, classMethodAndArguments.indexOf(")"));
 
         List<String> processedArgs = new ArrayList<>();
@@ -68,10 +73,10 @@ public class JavadocUtil {
             while (scanner.hasNext(MARKER_PATTERN)) {
                 processedArgs.add(scanParameterToHuman(scanner));
             }
-            arguments = StringUtils.join(processedArgs.toArray(), ",%20");
+            arguments = StringUtils.join(processedArgs.toArray(), "-");
         }
 
-        return JAVADOC_URL + packageName + '/' + className + ".html#" + methodName + "%28" + arguments + "%29";
+        return JAVADOC_URL + packageName + '/' + className + ".html#" + methodName + "-" + arguments + "-";
     }
 
     private static String scanParameterToHuman(Scanner scanner) {
@@ -79,7 +84,7 @@ public class JavadocUtil {
         String marker = scanner.next(MARKER_PATTERN);
         if (marker.equals("[")) {
             // array
-            return scanParameterToHuman(scanner) + "[]";
+            return scanParameterToHuman(scanner) + ":A";
         }
 
         if (marker.equals("L")) {
