@@ -108,6 +108,9 @@ public class Main {
         }
         executorService.shutdown();
         executorService.awaitTermination(5, TimeUnit.SECONDS);
+        if (i >= 10) {
+            System.out.println();
+        }
         // wait for threads to stop
         Thread.sleep(100);
         return deprecatedUsages;
