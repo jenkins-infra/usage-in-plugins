@@ -28,27 +28,32 @@ public class Main {
         updateCenter.download();
         System.out.println("All files are up to date (" + updateCenter.getPlugins().size() + " plugins)");
 
-        System.out.println("Analyzing deprecated api in Jenkins");
-        final File coreFile = updateCenter.getCore().getFile();
+        createReport(updateCenter, new JenkinsCoreAnalysis());
+
+        System.out.println("duration : " + (System.currentTimeMillis() - start) + " ms at "
+                + DateFormat.getDateTimeInstance().format(new Date()));
+    }
+
+    private static void createReport(UpdateCenter updateCenter, Analysis analysis) throws IOException, InterruptedException, ExecutionException {
+        System.out.println("Analyzing deprecated api in " + analysis.getAnalyzedFileName());
+        final File analyzedFile = analysis.getAnalyzedFile(updateCenter).getFile();
         final DeprecatedApi deprecatedApi = new DeprecatedApi();
-        deprecatedApi.analyze(coreFile);
+        deprecatedApi.analyze(analyzedFile);
 
-        System.out.println("Analyzing deprecated usage in plugins");
-        final List<DeprecatedUsage> deprecatedUsages = analyzeDeprecatedUsage(updateCenter.getPlugins(), deprecatedApi);
+        System.out.println("Analyzing deprecated usage in " + analysis.getDependentFilesName());
+        final List<DeprecatedUsage> deprecatedUsages = analyzeDeprecatedUsage(analysis.getDependentFiles(updateCenter), deprecatedApi);
 
+        File outputDir = analysis.getOutputDirectory("output");
         Report[] reports = new Report[] {
-                new DeprecatedUsageByPluginReport(deprecatedApi, deprecatedUsages, new File("output"), "usage-by-plugin"),
-                new DeprecatedUnusedApiReport(deprecatedApi, deprecatedUsages, new File("output"), "deprecated-and-unused"),
-                new DeprecatedUsageByApiReport(deprecatedApi, deprecatedUsages, new File("output"), "usage-by-api")
+                new DeprecatedUsageByPluginReport(deprecatedApi, deprecatedUsages, outputDir, "usage-by-plugin"),
+                new DeprecatedUnusedApiReport(deprecatedApi, deprecatedUsages, outputDir, "deprecated-and-unused"),
+                new DeprecatedUsageByApiReport(deprecatedApi, deprecatedUsages, outputDir, "usage-by-api")
         };
 
         for (Report report : reports) {
             report.generateJsonReport();
             report.generateHtmlReport();
         }
-
-        System.out.println("duration : " + (System.currentTimeMillis() - start) + " ms at "
-                + DateFormat.getDateTimeInstance().format(new Date()));
     }
 
     private static List<DeprecatedUsage> analyzeDeprecatedUsage(List<JenkinsFile> plugins,
