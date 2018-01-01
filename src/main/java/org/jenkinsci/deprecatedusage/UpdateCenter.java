@@ -59,15 +59,10 @@ public class UpdateCenter {
     }
 
     private JenkinsFile parse(JSONObject jsonObject) throws MalformedURLException, JSONException {
-        final String wiki;
-        if (jsonObject.has("wiki")) {
-            wiki = jsonObject.getString("wiki");
-        } else {
-            wiki = null;
-        }
+        final String wiki = jsonObject.optString("wiki");
         final HashSet<String> dependencies = new HashSet<>();
-        if (jsonObject.has("dependencies")) {
-            JSONArray jsonDependencies = jsonObject.getJSONArray("dependencies");
+        JSONArray jsonDependencies = jsonObject.optJSONArray("dependencies");
+        if (jsonDependencies != null) {
             for (int i = 0; i < jsonDependencies.length(); i++) {
                 dependencies.add(jsonDependencies.getJSONObject(i).getString("name"));
             }
