@@ -10,6 +10,9 @@ import java.util.regex.Pattern;
 public class JavadocUtil {
 
     private static final String JAVADOC_URL = "http://javadoc.jenkins.io/";
+    // from https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.3.2
+    // and  https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.3.3
+    private static final String MARKER_PATTERN = "[LBCDFIJSZV\\[]";
 
     public static String signatureToJenkinsdocLink(String fullSignature) {
         return signatureToJenkinsdocLink(fullSignature, fullSignature);
@@ -62,8 +65,7 @@ public class JavadocUtil {
         List<String> processedArgs = new ArrayList<>();
         if (arguments.length() > 0) {
             Scanner scanner = new Scanner(arguments);
-            String markerPattern = "[LZBCIV\\[]";
-            while (scanner.hasNext(markerPattern)) {
+            while (scanner.hasNext(MARKER_PATTERN)) {
                 processedArgs.add(scanParameterToHuman(scanner));
             }
             arguments = StringUtils.join(processedArgs.toArray(), ",%20");
@@ -73,9 +75,8 @@ public class JavadocUtil {
     }
 
     private static String scanParameterToHuman(Scanner scanner) {
-        String markerPattern = "[LZBCIV\\[]";
-        
-        String marker = scanner.next(markerPattern);
+
+        String marker = scanner.next(MARKER_PATTERN);
         if (marker.equals("[")) {
             // array
             return scanParameterToHuman(scanner) + "[]";
@@ -86,14 +87,6 @@ public class JavadocUtil {
             return className.substring(0, className.length() - 1).replace("$", ".").replace("/", ".");
         }
 
-        if (marker.equals("Z")) {
-            return "boolean";
-        }
-
-        if (marker.equals("I")) {
-            return "int";
-        }
-
         if (marker.equals("B")) {
             return "byte";
         }
@@ -101,6 +94,34 @@ public class JavadocUtil {
         if (marker.equals("C")) {
             return "char";
         }
+
+        if (marker.equals("D")) {
+            return "double";
+        }
+
+        if (marker.equals("F")) {
+            return "float";
+        }
+
+        if (marker.equals("I")) {
+            return "int";
+        }
+
+        if (marker.equals("J")) {
+            return "long";
+        }
+
+        if (marker.equals("S")) {
+            return "short";
+        }
+
+        if (marker.equals("Z")) {
+            return "boolean";
+        }
+
+
+
+
 
         return marker;
     }

@@ -37,5 +37,19 @@ public class JavadocUtilTest {
 
         assertEquals("http://javadoc.jenkins.io/hudson/util/ChartUtil.NumberOnlyBuildLabel.html#build",
                 signatureToJenkinsdocUrl("hudson/util/ChartUtil$NumberOnlyBuildLabel#build"));
+
+        assertEquals("http://javadoc.jenkins.io/hudson/node_monitors/AbstractNodeMonitorDescriptor.html#AbstractNodeMonitorDescriptor%28long%29",
+            signatureToJenkinsdocUrl("hudson/node_monitors/AbstractNodeMonitorDescriptor#<init>(J)V"));
+
+        assertEquals("http://javadoc.jenkins.io/hudson/model/MultiStageTimeSeries.html#MultiStageTimeSeries%28float,%20float%29",
+            signatureToJenkinsdocUrl("hudson/model/MultiStageTimeSeries#<init>(FF)V"));
+
+        // FAKED ONE, no public method in jenkins with a double found
+        assertEquals("http://javadoc.jenkins.io/hudson/node_monitors/AbstractNodeMonitorDescriptor.html#AbstractNodeMonitorDescriptor%28double%29",
+            signatureToJenkinsdocUrl("hudson/node_monitors/AbstractNodeMonitorDescriptor#<init>(D)V"));
+
+        // FAKED ONE, no public method in jenkins with a short found
+        assertEquals("http://javadoc.jenkins.io/hudson/node_monitors/AbstractNodeMonitorDescriptor.html#AbstractNodeMonitorDescriptor%28short%29",
+            signatureToJenkinsdocUrl("hudson/node_monitors/AbstractNodeMonitorDescriptor#<init>(S)V"));
     }
 }
