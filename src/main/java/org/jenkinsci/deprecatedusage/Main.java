@@ -29,6 +29,9 @@ public class Main {
         System.out.println("All files are up to date (" + updateCenter.getPlugins().size() + " plugins)");
 
         createReport(updateCenter, new JenkinsCoreAnalysis());
+        for(JenkinsFile plugin : updateCenter.getPlugins()) {
+            createReport(updateCenter, new PluginAnalysis(plugin));
+        }
 
         System.out.println("duration : " + (System.currentTimeMillis() - start) + " ms at "
                 + DateFormat.getDateTimeInstance().format(new Date()));
