@@ -46,8 +46,13 @@ public class Main {
     private static Map<String, Exception> createPluginsReport(UpdateCenter updateCenter) {
         final Map<String, Exception> errors = new TreeMap<>();
         for(JenkinsFile plugin : updateCenter.getPlugins()) {
+            Analysis analysis = new PluginAnalysis(plugin);
+            if (analysis.getDependentFiles(updateCenter).isEmpty()) {
+                System.out.println("No dependent plugin for " + analysis.getAnalyzedFileName());
+                continue;
+            }
             try {
-                createReport(updateCenter, new PluginAnalysis(plugin));
+                createReport(updateCenter, analysis);
             } catch (Exception ex) {
                 errors.put(plugin.getName(), ex);
             }
