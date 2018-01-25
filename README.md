@@ -1,6 +1,8 @@
-**Finds and reports usage of deprecated Jenkins api in plugins** (except api used in jelly and groovy files and in WEB-INF/lib/*.jar)
+**Finds and reports usage of**
+* **deprecated Jenkins api in plugins** (except api used in jelly and groovy files and in WEB-INF/lib/*.jar)
+* **deprecated plugin api in dependent plugins**
 
-[![Build Status](https://ci.jenkins-ci.org/buildStatus/icon?job=Reporting/infra_deprecated-usage-in-plugins)](https://ci.jenkins-ci.org/view/All/job/Reporting/job/infra_deprecated-usage-in-plugins/)
+[![Build Status](https://ci.jenkins.io/buildStatus/icon?job=Reporting/deprecated-usage-in-plugins)](https://ci.jenkins.io/job/Reporting/job/deprecated-usage-in-plugins/)
 
 Current results in summary:
 * 1114 plugins
@@ -8,7 +10,7 @@ Current results in summary:
 * 20 deprecated classes, 170 deprecated methods and 12 deprecated fields are used in plugins
 * 28 deprecated and public Jenkins classes, 319 deprecated methods, 58 deprecated fields are not used in the latest published plugins
 
-See details and deprecated usage for each plugin in the [continuous integration](https://ci.jenkins-ci.org/view/All/job/Reporting/job/infra_deprecated-usage-in-plugins/lastSuccessfulBuild/artifact/target/output.html) or in this [example of output](../../blob/master/Output_example.html).
+See details and deprecated usage for each plugin in the [continuous integration](https://ci.jenkins.io/job/Reporting/job/deprecated-usage-in-plugins/lastSuccessfulBuild/artifact/output/).
 
 See also:
 * [Jenkins policy for API deprecation](https://issues.jenkins-ci.org/browse/JENKINS-31035)
