@@ -16,57 +16,58 @@ public class DeprecatedUnusedApiReport extends Report {
 
     protected void generateHtmlReport(Writer writer) throws IOException {
         writer.append("<h1>Unused Deprecated APIs</h1>");
+        writer.append("Not working in this custom mode by design.");
 
-        {
-            writer.append("<div class='classes'><h2>Classes</h2><ul>\n");
-            CLASSES:
-            for (String deprecatedClass : new TreeSet<>(api.getClasses())) {
-                if (!isRelevantSignature(deprecatedClass)) {
-                    continue;
-                }
-                for (DeprecatedUsage usage : usages) {
-                    if (usage.getClasses().contains(deprecatedClass)) {
-                        continue CLASSES;
-                    }
-                }
-                writer.append("<li>" + JavadocUtil.signatureToJenkinsdocLink(deprecatedClass) + "</li>\n");
-            }
-            writer.append("</div>");
-        }
-
-        {
-            writer.append("<div class='fields'><h2>Fields</h2><ul>\n");
-            FIELDS:
-            for (String deprecatedField : new TreeSet<>(api.getFields())) {
-                if (!isRelevantSignature(deprecatedField)) {
-                    continue;
-                }
-                for (DeprecatedUsage usage : usages) {
-                    if (usage.getFields().contains(deprecatedField)) {
-                        continue FIELDS;
-                    }
-                }
-                writer.append("<li>" + JavadocUtil.signatureToJenkinsdocLink(deprecatedField) + "</li>\n");
-            }
-            writer.append("</div>");
-        }
-
-        {
-            writer.append("<div class='methods'><h2>Methods</h2><ul>\n");
-            METHODS:
-            for (String deprecatedMethod : new TreeSet<>(api.getMethods())) {
-                if (!isRelevantSignature(deprecatedMethod)) {
-                    continue;
-                }
-                for (DeprecatedUsage usage : usages) {
-                    if (usage.getMethods().contains(deprecatedMethod)) {
-                        continue METHODS;
-                    }
-                }
-                writer.append("<li>" + JavadocUtil.signatureToJenkinsdocLink(deprecatedMethod) + "</li>\n");
-            }
-            writer.append("</div>");
-        }
+//        {
+//            writer.append("<div class='classes'><h2>Classes</h2><ul>\n");
+//            CLASSES:
+//            for (String deprecatedClass : new TreeSet<>(api.getClasses())) {
+////                if (!isRelevantSignature(deprecatedClass)) {
+////                    continue;
+////                }
+//                for (DeprecatedUsage usage : usages) {
+//                    if (usage.getClasses().contains(deprecatedClass)) {
+//                        continue CLASSES;
+//                    }
+//                }
+//                writer.append("<li>" + JavadocUtil.signatureToJenkinsdocLink(deprecatedClass) + "</li>\n");
+//            }
+//            writer.append("</div>");
+//        }
+//
+//        {
+//            writer.append("<div class='fields'><h2>Fields</h2><ul>\n");
+//            FIELDS:
+//            for (String deprecatedField : new TreeSet<>(api.getFields())) {
+////                if (!isRelevantSignature(deprecatedField)) {
+////                    continue;
+////                }
+//                for (DeprecatedUsage usage : usages) {
+//                    if (usage.getFields().contains(deprecatedField)) {
+//                        continue FIELDS;
+//                    }
+//                }
+//                writer.append("<li>" + JavadocUtil.signatureToJenkinsdocLink(deprecatedField) + "</li>\n");
+//            }
+//            writer.append("</div>");
+//        }
+//
+//        {
+//            writer.append("<div class='methods'><h2>Methods</h2><ul>\n");
+//            METHODS:
+//            for (String deprecatedMethod : new TreeSet<>(api.getMethods())) {
+////                if (!isRelevantSignature(deprecatedMethod)) {
+////                    continue;
+////                }
+//                for (DeprecatedUsage usage : usages) {
+//                    if (usage.getMethods().contains(deprecatedMethod)) {
+//                        continue METHODS;
+//                    }
+//                }
+//                writer.append("<li>" + JavadocUtil.signatureToJenkinsdocLink(deprecatedMethod) + "</li>\n");
+//            }
+//            writer.append("</div>");
+//        }
     }
 
     protected void generateJsonReport(Writer writer) throws IOException {
@@ -89,39 +90,39 @@ public class DeprecatedUnusedApiReport extends Report {
             obj.put("classes", unusedClasses);
         }
 
-        {
-            SortedSet<String> unusedFields = new TreeSet<>();
-            FIELDS:
-            for (String deprecatedField : new TreeSet<>(api.getFields())) {
-                if (!isRelevantSignature(deprecatedField)) {
-                    continue;
-                }
-                for (DeprecatedUsage usage : usages) {
-                    if (usage.getFields().contains(deprecatedField)) {
-                        continue FIELDS;
-                    }
-                }
-                unusedFields.add(deprecatedField);
-            }
-            obj.put("fields", unusedFields);
-        }
-
-        {
-            SortedSet<String> unusedMethods = new TreeSet<>();
-            METHODS:
-            for (String deprecatedMethod : api.getMethods()) {
-                if (!isRelevantSignature(deprecatedMethod)) {
-                    continue;
-                }
-                for (DeprecatedUsage usage : usages) {
-                    if (usage.getMethods().contains(deprecatedMethod)) {
-                        continue METHODS;
-                    }
-                }
-                unusedMethods.add(deprecatedMethod);
-            }
-            obj.put("methods", unusedMethods);
-        }
+//        {
+//            SortedSet<String> unusedFields = new TreeSet<>();
+//            FIELDS:
+//            for (String deprecatedField : new TreeSet<>(api.getFields())) {
+//                if (!isRelevantSignature(deprecatedField)) {
+//                    continue;
+//                }
+//                for (DeprecatedUsage usage : usages) {
+//                    if (usage.getFields().contains(deprecatedField)) {
+//                        continue FIELDS;
+//                    }
+//                }
+//                unusedFields.add(deprecatedField);
+//            }
+//            obj.put("fields", unusedFields);
+//        }
+//
+//        {
+//            SortedSet<String> unusedMethods = new TreeSet<>();
+//            METHODS:
+//            for (String deprecatedMethod : api.getMethods()) {
+//                if (!isRelevantSignature(deprecatedMethod)) {
+//                    continue;
+//                }
+//                for (DeprecatedUsage usage : usages) {
+//                    if (usage.getMethods().contains(deprecatedMethod)) {
+//                        continue METHODS;
+//                    }
+//                }
+//                unusedMethods.add(deprecatedMethod);
+//            }
+//            obj.put("methods", unusedMethods);
+//        }
 
         writer.append(obj.toString(2));
     }

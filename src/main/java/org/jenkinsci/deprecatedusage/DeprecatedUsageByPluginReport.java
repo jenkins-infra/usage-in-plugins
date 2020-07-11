@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -34,30 +35,41 @@ public class DeprecatedUsageByPluginReport extends Report {
             if (!usage.hasDeprecatedUsage()) {
                 continue;
             }
-            writer.append("<div class='plugin'><h2 id='" + usage.getPlugin().artifactId +"'><a href='" + usage.getPlugin().getUrl() + "'>" + usage.getPlugin().toString() + "</a></h2>");
+            writer.append("<div class='plugin'><h2 id='" + usage.getPlugin().artifactId + "'><a href='" + usage.getPlugin().getUrl() + "'>" + usage.getPlugin().toString() + "</a></h2>");
 
-            if (usage.getClasses().size() > 0) {
-                writer.append("<h3>Classes</h3><ul>");
-                for (String clazz : usage.getClasses()) {
-                    writer.append("<li>" + JavadocUtil.signatureToJenkinsdocLink(clazz) + "</li>\n");
-                }
-                writer.append("</ul>\n\n");
-            }
+            Set<String> acegiClasses = new TreeSet<>();
+            acegiClasses.addAll(usage.getAcegiToClasses().keySet());
+            acegiClasses.addAll(usage.getAcegiToMethods().keySet());
+            acegiClasses.addAll(usage.getAcegiToFields().keySet());
 
-            if (usage.getMethods().size() > 0) {
-                writer.append("<h3>Methods</h3><ul>");
-                for (String method : usage.getMethods()) {
-                    writer.append("<li>" + JavadocUtil.signatureToJenkinsdocLink(method) + "</li>\n");
+            for (String acegiClass : acegiClasses) {
+                writer.append("<h3>Acegi class: " + acegiClass + "</h3>");
+                List<String> cs = usage.getAcegiToClasses().get(acegiClass);
+                if (cs != null) {
+                    writer.append("<h4>Classes</h4><ul>");
+                    for (String clazz : cs) {
+                        writer.append("<li>" + JavadocUtil.signatureToJenkinsdocLink(clazz) + "</li>\n");
+                    }
+                    writer.append("</ul>\n\n");
                 }
-                writer.append("</ul>\n\n");
-            }
 
-            if (usage.getFields().size() > 0) {
-                writer.append("<h3>Fields</h3><ul>");
-                for (String field : usage.getFields()) {
-                    writer.append("<li>" + JavadocUtil.signatureToJenkinsdocLink(field) + "</li>\n");
+                List<String> ms = usage.getAcegiToMethods().get(acegiClass);
+                if (ms != null) {
+                    writer.append("<h4>Methods</h4><ul>");
+                    for (String method : ms) {
+                        writer.append("<li>" + JavadocUtil.signatureToJenkinsdocLink(method) + "</li>\n");
+                    }
+                    writer.append("</ul>\n\n");
                 }
-                writer.append("</ul>\n\n");
+
+                List<String> fs = usage.getAcegiToFields().get(acegiClass);
+                if (fs != null) {
+                    writer.append("<h4>Fields</h4><ul>");
+                    for (String field : fs) {
+                        writer.append("<li>" + JavadocUtil.signatureToJenkinsdocLink(field) + "</li>\n");
+                    }
+                    writer.append("</ul>\n\n");
+                }
             }
             writer.append("</div>");
         }

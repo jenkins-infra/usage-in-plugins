@@ -17,6 +17,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.zip.ZipException;
 
 public class Main {
@@ -51,16 +52,18 @@ public class Main {
         System.out.println("Analyzing deprecated api in Jenkins");
         final File coreFile = updateCenter.getCore().getFile();
         final DeprecatedApi deprecatedApi = new DeprecatedApi();
-        addClassesToAnalyze(deprecatedApi);
-        deprecatedApi.analyze(coreFile);
+//        addClassesToAnalyze(deprecatedApi);
+//        deprecatedApi.analyze(coreFile);
 
         System.out.println("Analyzing deprecated usage in plugins");
         final List<DeprecatedUsage> deprecatedUsages = analyzeDeprecatedUsage(updateCenter.getPlugins(), deprecatedApi);
 
+        List<DeprecatedUsage> nonEmptyUsages = deprecatedUsages.stream().filter(d -> d.hasDeprecatedUsage()).collect(Collectors.toList());
+        
         Report[] reports = new Report[] {
-                new DeprecatedUsageByPluginReport(deprecatedApi, deprecatedUsages, new File("output"), "usage-by-plugin"),
-                new DeprecatedUnusedApiReport(deprecatedApi, deprecatedUsages, new File("output"), "deprecated-and-unused"),
-                new DeprecatedUsageByApiReport(deprecatedApi, deprecatedUsages, new File("output"), "usage-by-api")
+                new DeprecatedUsageByPluginReport(deprecatedApi, nonEmptyUsages, new File("output"), "usage-by-plugin"),
+                new DeprecatedUnusedApiReport(deprecatedApi, nonEmptyUsages, new File("output"), "deprecated-and-unused"),
+                new DeprecatedUsageByApiReport(deprecatedApi, nonEmptyUsages, new File("output"), "usage-by-api")
         };
 
         for (Report report : reports) {
@@ -72,26 +75,22 @@ public class Main {
                 + DateFormat.getDateTimeInstance().format(new Date()));
     }
 
-    /**
-     * Adds hardcoded classes to analyze for usage. This is mostly designed for finding classes planned for deprecation,
-     * but can be also used to find any class usage.
-     *
-     */
-    private static void addClassesToAnalyze(DeprecatedApi deprecatedApi) throws IOException {
-        if (Options.get().additionalClassesFile != null) {
-            List<String> additionalClasses = Options.getAdditionalClasses();
-            deprecatedApi.addClasses(additionalClasses);
-        } else {
-            System.out.println("No 'additionalClassesFile' option, only already deprecated class will be searched for");
-        }
-    }
-
     private static List<DeprecatedUsage> analyzeDeprecatedUsage(List<JenkinsFile> plugins,
             final DeprecatedApi deprecatedApi) throws InterruptedException, ExecutionException {
         final ExecutorService executorService = Executors
                 .newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         final List<Future<DeprecatedUsage>> futures = new ArrayList<>(plugins.size());
         for (final JenkinsFile plugin : plugins) {
+//            if(!plugin.getName().contains("reverse-proxy-auth")){
+//                continue;
+//            }
+            //            if(!plugin.getName().contains("crowd2")){
+            //                continue;
+            //            }
+//            if(!plugin.getName().contains("azure-ad")){
+//                continue;
+//            }
+
             final Callable<DeprecatedUsage> task = new Callable<DeprecatedUsage>() {
                 @Override
                 public DeprecatedUsage call() throws IOException {
