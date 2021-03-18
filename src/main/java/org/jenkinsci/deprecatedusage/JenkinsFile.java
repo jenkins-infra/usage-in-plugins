@@ -1,14 +1,12 @@
 package org.jenkinsci.deprecatedusage;
 
-import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
-import org.apache.hc.client5.http.async.methods.SimpleHttpRequests;
-import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
-import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
-import org.apache.hc.core5.concurrent.FutureCallback;
+import org.asynchttpclient.AsyncHttpClient;
+import org.asynchttpclient.Dsl;
+import org.asynchttpclient.RequestBuilder;
+import org.asynchttpclient.Response;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -16,6 +14,8 @@ import java.nio.file.StandardOpenOption;
 import java.security.DigestException;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 public class JenkinsFile {
     private final String name;
@@ -24,6 +24,7 @@ public class JenkinsFile {
     private final String wiki;
     private Path file;
     private final Checksum checksum;
+    private final RequestBuilder requestBuilder;
 
     public JenkinsFile(String name, String version, String url, String wiki, Checksum checksum) {
         super();
@@ -34,6 +35,7 @@ public class JenkinsFile {
         this.checksum = checksum;
         String fileName = url.substring(url.lastIndexOf('/') + 1);
         file = Paths.get("work", name, version, fileName).toAbsolutePath();
+        requestBuilder = Dsl.get(url);
     }
 
     public String getName() {
@@ -57,17 +59,17 @@ public class JenkinsFile {
     }
 
     public void deleteFile() throws IOException {
-        Files.delete(file);
+        Files.deleteIfExists(file);
     }
 
-    public CompletableFuture<Void> downloadIfNotExists(CloseableHttpAsyncClient client) {
+    public CompletableFuture<Void> downloadIfNotExists(AsyncHttpClient client) {
         if (Files.exists(file)) {
             return CompletableFuture.completedFuture(null);
         }
         return download(client);
     }
 
-    private CompletableFuture<Void> download(CloseableHttpAsyncClient client) {
+    private CompletableFuture<Void> download(AsyncHttpClient client) {
         CompletableFuture<Void> future = new CompletableFuture<>();
         try {
             Files.createDirectories(file.getParent());
@@ -75,53 +77,38 @@ public class JenkinsFile {
             future.completeExceptionally(e);
             return future;
         }
-        SimpleHttpRequest request = SimpleHttpRequests.get(url);
-        class Callback implements FutureCallback<SimpleHttpResponse> {
-            // TODO: figure out how to re-use the configured HttpRequestRetryStrategy instead of this workaround
-            //  (see http request/response/exec chain interceptors potentially?)
-            private int retriesRemaining = 3;
+        class RetryAsync implements Function<Response, CompletableFuture<Void>> {
+            final AtomicInteger retryCounter = new AtomicInteger(3);
+            final CompletableFuture<Void> completableFuture = new CompletableFuture<>();
 
             @Override
-            public void completed(SimpleHttpResponse result) {
+            public CompletableFuture<Void> apply(Response response) {
+                if (response.getStatusCode() >= 400) {
+                    completableFuture.completeExceptionally(new IOException(response.getStatusText() + "\nURL: " + url));
+                    return completableFuture;
+                }
                 try {
-                    byte[] data = result.getBodyBytes();
-                    if (result.getCode() > 399) {
-                        future.completeExceptionally(new IOException(url + " failed: " + result.getCode() + " " + new String(data, StandardCharsets.ISO_8859_1)));
-                    }
-                    if (checksum != null) {
-                        try {
-                            checksum.check(data, url);
-                            Files.write(file, data, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-                            System.out.printf("Downloaded %s @ %.2f kiB%n", url, (data.length / 1024.0));
-                            future.complete(null);
-                        } catch (DigestException x) {
-                            if (retriesRemaining > 0) {
-                                System.out.println("Retrying download of " + url + " due to invalid message digest");
-                                retriesRemaining--;
-                                client.execute(request, this);
-                            } else {
-                                future.completeExceptionally(x);
-                            }
-                        }
+                    byte[] data = response.getResponseBodyAsBytes();
+                    checksum.check(data, url);
+                    Files.write(file, data, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+                    System.out.printf("Downloaded %s @ %.2f kiB%n", url, (data.length / 1024.0));
+                    return CompletableFuture.completedFuture(null);
+                } catch (DigestException e) {
+                    if (retryCounter.getAndDecrement() > 0) {
+                        System.out.println("Retrying download of " + url + " due to invalid message digest");
+                        return client.executeRequest(requestBuilder).toCompletableFuture().thenCompose(this);
+                    } else {
+                        completableFuture.completeExceptionally(e);
                     }
                 } catch (IOException e) {
-                    future.completeExceptionally(e);
+                    completableFuture.completeExceptionally(e);
                 }
-            }
-
-            @Override
-            public void failed(Exception ex) {
-                future.completeExceptionally(ex);
-            }
-
-            @Override
-            public void cancelled() {
-                System.out.println("Download cancelled for " + url);
-                future.cancel(true);
+                return completableFuture;
             }
         }
-        client.execute(request, new Callback());
-        return future;
+        return client.executeRequest(requestBuilder)
+                .toCompletableFuture()
+                .thenComposeAsync(checksum == null ? response -> CompletableFuture.completedFuture(null) : new RetryAsync());
     }
 
     @Override
