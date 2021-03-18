@@ -1,14 +1,14 @@
 package org.jenkinsci.deprecatedusage;
 
+import java.util.Objects;
+
 public class Plugin implements Comparable<Plugin> {
     public final String artifactId;
     public final String version;
 
     public Plugin(String artifactId, String version) {
-        artifactId.hashCode();
-        version.hashCode();
-        this.artifactId = artifactId;
-        this.version = version;
+        this.artifactId = Objects.requireNonNull(artifactId);
+        this.version = Objects.requireNonNull(version);
     }
 
     @Override

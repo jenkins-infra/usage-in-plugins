@@ -1,18 +1,18 @@
 package org.jenkinsci.deprecatedusage;
 
+import org.apache.commons.codec.binary.Hex;
+
 import java.nio.charset.StandardCharsets;
 import java.security.DigestException;
 import java.security.MessageDigest;
-import java.util.function.Function;
-import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.lang3.StringUtils;
+import java.util.function.UnaryOperator;
 
 @FunctionalInterface
 public interface Checksum {
 
     void check(byte[] data, String url) throws DigestException;
 
-    static Checksum fromDigest(String kind, byte[] expectedDigest, Function<byte[], byte[]> digester) {
+    static Checksum fromDigest(String kind, byte[] expectedDigest, UnaryOperator<byte[]> digester) {
         return (data, url) -> {
             byte[] actualDigest = digester.apply(data);
             if (!MessageDigest.isEqual(expectedDigest, actualDigest)) {
