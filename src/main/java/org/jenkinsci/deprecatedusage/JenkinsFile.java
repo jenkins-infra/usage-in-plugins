@@ -1,21 +1,18 @@
 package org.jenkinsci.deprecatedusage;
 
-import org.asynchttpclient.AsyncHttpClient;
-import org.asynchttpclient.Dsl;
-import org.asynchttpclient.RequestBuilder;
-import org.asynchttpclient.Response;
+import org.apache.commons.codec.digest.DigestUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.security.DigestException;
+import java.security.DigestOutputStream;
+import java.security.MessageDigest;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 
 public class JenkinsFile {
     private final String name;
@@ -23,19 +20,19 @@ public class JenkinsFile {
     private final String url;
     private final String wiki;
     private Path file;
-    private final Checksum checksum;
-    private final RequestBuilder requestBuilder;
+    private final MessageDigest messageDigest;
+    private final byte[] expectedDigest;
 
-    public JenkinsFile(String name, String version, String url, String wiki, Checksum checksum) {
+    public JenkinsFile(String name, String version, String url, String wiki, MessageDigest messageDigest, byte[] expectedDigest) {
         super();
         this.name = name;
         this.version = version;
         this.url = url;
         this.wiki = wiki;
-        this.checksum = checksum;
+        this.messageDigest = messageDigest;
+        this.expectedDigest = expectedDigest;
         String fileName = url.substring(url.lastIndexOf('/') + 1);
         file = Paths.get("work", name, version, fileName).toAbsolutePath();
-        requestBuilder = Dsl.get(url);
     }
 
     public String getName() {
@@ -54,6 +51,10 @@ public class JenkinsFile {
         return file.toFile();
     }
 
+    public String getUrl() {
+        return url;
+    }
+
     public void setFile(File file) {
         this.file = file.toPath();
     }
@@ -62,53 +63,32 @@ public class JenkinsFile {
         Files.deleteIfExists(file);
     }
 
-    public CompletableFuture<Void> downloadIfNotExists(AsyncHttpClient client) {
-        if (Files.exists(file)) {
-            return CompletableFuture.completedFuture(null);
+    public boolean isFileSynchronized() {
+        if (Files.notExists(file)) {
+            return false;
         }
-        return download(client);
+        if (messageDigest == null) {
+            return true;
+        }
+        try (InputStream in = Files.newInputStream(file)) {
+            messageDigest.reset();
+            return MessageDigest.isEqual(expectedDigest, DigestUtils.digest(messageDigest, in));
+        } catch (IOException ignored) {
+            return false;
+        }
     }
 
-    private CompletableFuture<Void> download(AsyncHttpClient client) {
-        CompletableFuture<Void> future = new CompletableFuture<>();
-        try {
-            Files.createDirectories(file.getParent());
-        } catch (IOException e) {
-            future.completeExceptionally(e);
-            return future;
+    public OutputStream getFileOutputStream() throws IOException {
+        OutputStream fileStream = Files.newOutputStream(file, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        if (messageDigest != null) {
+            messageDigest.reset();
+            return new DigestOutputStream(fileStream, messageDigest);
         }
-        class RetryAsync implements Function<Response, CompletableFuture<Void>> {
-            final AtomicInteger retryCounter = new AtomicInteger(3);
-            final CompletableFuture<Void> completableFuture = new CompletableFuture<>();
+        return fileStream;
+    }
 
-            @Override
-            public CompletableFuture<Void> apply(Response response) {
-                if (response.getStatusCode() >= 400) {
-                    completableFuture.completeExceptionally(new IOException(response.getStatusText() + "\nURL: " + url));
-                    return completableFuture;
-                }
-                try {
-                    byte[] data = response.getResponseBodyAsBytes();
-                    checksum.check(data, url);
-                    Files.write(file, data, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-                    System.out.printf("Downloaded %s @ %.2f kiB%n", url, (data.length / 1024.0));
-                    return CompletableFuture.completedFuture(null);
-                } catch (DigestException e) {
-                    if (retryCounter.getAndDecrement() > 0) {
-                        System.out.println("Retrying download of " + url + " due to invalid message digest");
-                        return client.executeRequest(requestBuilder).toCompletableFuture().thenCompose(this);
-                    } else {
-                        completableFuture.completeExceptionally(e);
-                    }
-                } catch (IOException e) {
-                    completableFuture.completeExceptionally(e);
-                }
-                return completableFuture;
-            }
-        }
-        return client.executeRequest(requestBuilder)
-                .toCompletableFuture()
-                .thenComposeAsync(checksum == null ? response -> CompletableFuture.completedFuture(null) : new RetryAsync());
+    public boolean isFileMessageDigestValid() {
+        return messageDigest == null || MessageDigest.isEqual(expectedDigest, messageDigest.digest());
     }
 
     @Override
