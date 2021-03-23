@@ -38,10 +38,13 @@ public class Downloader {
                 latch.countDown();
             } else {
                 Path path = file.getFile().toPath();
-                try {
-                    Files.createDirectories(path.getParent());
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
+                Path parent = path.getParent();
+                if (Files.notExists(parent)) {
+                    try {
+                        Files.createDirectories(parent);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
                 }
                 download(file).handle((success, failure) -> {
                     if (failure != null) {
