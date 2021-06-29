@@ -51,7 +51,7 @@ Writing output/usage-by-api.json
 Writing output/usage-by-api.html
 ----
 
-=== Finding Usage of Methods and Fields
+=== Finding Usage of Classes, Methods and Fields
 
 The command line flag `-M filename.txt` or `--additionalMethods filename.txt` allows you to search for specific methods.
 Use the additional flag `-i` or `--onlyIncludeSpecified` to only show usage of specified classes, methods, and fields.
@@ -66,13 +66,33 @@ Specify class names in their fully qualified form (i.e., inner classes should be
 Specify method names after the hash.
 You cannot specify distinct method signatures. All variants are included in reports.
 
+==== For Fields
+
 The command line flag `-F filename.txt` or `--additionalFields filename.txt` allows you to find specific field usages.
 The syntax here is the same as for specifying method names.
-Use the additional flag `-i` or `--onlyIncludeSpecified` to only show usage of specified classes, methods, and fields.
 
-=== Finding Usage by Package
+Example:
 
-By using just a package name instead of the fully qualified class name in any of the options above, this searches for classes that start with the same specified package.
+[source]
+----
+jenkins.model.Jenkins#ADMINISTER
+----
+
+==== For Classes
+
+The command line flag `-C filename.txt` or `--additionalClasses filename.txt` allows you to find specific classes usages.
+The syntax here is the same as for specifying method names.
+
+Example:
+
+[source]
+----
+hudson.model.Hudson
+----
+
+==== Finding Usage by Package
+
+By using just a package name instead of the fully qualified class name in "Method" or "Field" options, this searches for classes that start with the same specified package.
 For example, the following snippet would search for usage of methods or fields named `toString` in any classes inside the `hudson.util` package or its descendants.
 Note the trailing `.` before the `#` separator which makes the search more specific to `hudson.util` rather than also including the hypothetical package `hudson.utils` or `hudson.utility`.
 
@@ -81,7 +101,27 @@ Note the trailing `.` before the `#` separator which makes the search more speci
 hudson.util.#toString
 ----
 
+==== Additional information
+
+Multiple entries can be put in the file related to those options, one per line.
+The lines are trimmed and if one starts with a `#`, it's considered as a comment, and thus ignored.
+The "class full name" can be written with `.` or with `/` without incidence.
+
 === Configuring Parallelism
 
 The default parallelism settings will allow up to 4x the number of available CPUs downloads at a time.
 This can be overridden by the `-D N` or `--downloadConcurrent=N` option for some number `N`.
+
+=== Configuring Recursion
+
+By default the recursion is disabled. You can enable it by using `-r` or `--recursive`.
+The level of depth used as a boundary for the recursion is managed by the argument `--recursiveMaxDepth MAX_DEPTH`, with a default value to 5.
+
+There is a builtin anti-loop mechanism to prevent methods calling a method already in the call hierarchy.
+
+The reports containing "recursive" in their name will contain information only in this case this option is enabled.
+
+=== Development utilities
+
+The default behavior is to download the configure Update Center metadata and then compared the local cache (using checksum) in order to determine which cores/plugins need to be downloaded.
+If you want to avoid downloading the latest updates but just using what you have on disk (esp. useful during debugging session), you can use the argument `--skipDownloads`.

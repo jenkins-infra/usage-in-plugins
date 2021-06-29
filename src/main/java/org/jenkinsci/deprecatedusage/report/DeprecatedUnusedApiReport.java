@@ -1,5 +1,9 @@
-package org.jenkinsci.deprecatedusage;
+package org.jenkinsci.deprecatedusage.report;
 
+import org.jenkinsci.deprecatedusage.DeprecatedApi;
+import org.jenkinsci.deprecatedusage.DeprecatedUsage;
+import org.jenkinsci.deprecatedusage.JavadocUtil;
+import org.jenkinsci.deprecatedusage.Report;
 import org.json.JSONObject;
 
 import java.io.File;

@@ -10,6 +10,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -61,6 +62,15 @@ public class Options {
     @Option(name = "-D", aliases = "--downloadConcurrent", metaVar = "COUNT", usage = "Specifies number of concurrent downloads to allow")
     public int maxConcurrentDownloads = Runtime.getRuntime().availableProcessors() * 4;
 
+    @Option(name = "-r", aliases = "--recursive", usage = "Recursively check for method signatures (does not work for class/field at the moment)")
+    public boolean recursive;
+    
+    @Option(name = "--recursiveMaxDepth", metaVar = "MAX_DEPTH", usage = "Maximum depth for the recursion, default to 5. Only considered if recursive mode is activated.")
+    public int recursiveMaxDepth = 5;
+
+    @Option(name = "-s", aliases = "--skipDownloads", usage = "Disable the download of the core/plugins and use the local version. Useful during development to debug more efficiently.")
+    public boolean skipDownloads;
+
     @Option(name = "-v", aliases = "--verbose", usage = "Add verbose logging about downloads")
     public boolean verbose;
 
@@ -87,7 +97,7 @@ public class Options {
      *
      * @throws IllegalArgumentException if called when {@link #additionalClassesFile} has not been specified.
      */
-    static List<String> getAdditionalClasses() throws IllegalArgumentException {
+    public static List<String> getAdditionalClasses() throws IllegalArgumentException {
         if (additionalClasses != null) {
             return additionalClasses;
         }
@@ -98,7 +108,14 @@ public class Options {
         }
 
         try {
-            additionalClasses = FileUtils.readLines(additionalClassesFile, StandardCharsets.UTF_8.name());
+            additionalClasses = new ArrayList<>();
+            for (String line : Files.readAllLines(additionalClassesFile.toPath(), StandardCharsets.UTF_8)) {
+                String trimmedLine = line.trim();
+                if (!trimmedLine.startsWith("#")){
+                    additionalClasses.add(trimmedLine.replaceAll("\\.", "/"));
+                }
+            }
+            
             System.out.println(additionalClassesFile + " found, adding " + additionalClasses.size() + " classes");
             for (String additionalClass : additionalClasses) {
                 System.out.println("\tadding " + additionalClass);
@@ -109,7 +126,7 @@ public class Options {
         }
     }
 
-    static Map<String, Set<String>> getAdditionalMethodNames() {
+    public static Map<String, Set<String>> getAdditionalMethodNames() {
         if (additionalMethodNames != null) {
             return additionalMethodNames;
         }
@@ -120,13 +137,15 @@ public class Options {
         additionalMethodNames = new ConcurrentHashMap<>();
         try {
             for (String line : Files.readAllLines(path, StandardCharsets.UTF_8)) {
-                int hash = line.indexOf('#');
-                if (hash == -1) {
-                    continue;
+                String trimmedLine = line.trim();
+                if (!trimmedLine.startsWith("#")){
+                    int hashIndex = trimmedLine.indexOf('#');
+                    if (hashIndex != -1) {
+                        String className = trimmedLine.substring(0, hashIndex).replaceAll("\\.", "/");
+                        String methodName = trimmedLine.substring(hashIndex + 1);
+                        additionalMethodNames.computeIfAbsent(className, ignored -> new LinkedHashSet<>()).add(methodName);
+                    }
                 }
-                String className = line.substring(0, hash).replaceAll("\\.", "/");
-                String methodName = line.substring(hash + 1);
-                additionalMethodNames.computeIfAbsent(className, ignored -> new LinkedHashSet<>()).add(methodName);
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -134,7 +153,7 @@ public class Options {
         return additionalMethodNames;
     }
 
-    static Map<String, Set<String>> getAdditionalFields() {
+    public static Map<String, Set<String>> getAdditionalFields() {
         if (additionalFields != null) {
             return additionalFields;
         }
@@ -145,13 +164,15 @@ public class Options {
         additionalFields = new ConcurrentHashMap<>();
         try {
             for (String line : Files.readAllLines(path, StandardCharsets.UTF_8)) {
-                int hash = line.indexOf('#');
-                if (hash == -1) {
-                    continue;
+                String trimmedLine = line.trim();
+                if (!trimmedLine.startsWith("#")) {
+                    int hashIndex = trimmedLine.indexOf('#');
+                    if (hashIndex != -1) {
+                        String className = trimmedLine.substring(0, hashIndex).replaceAll("\\.", "/");
+                        String fieldName = trimmedLine.substring(hashIndex + 1);
+                        additionalFields.computeIfAbsent(className, ignored -> new LinkedHashSet<>()).add(fieldName);
+                    }
                 }
-                String className = line.substring(0, hash).replaceAll("\\.", "/");
-                String methodName = line.substring(hash + 1);
-                additionalFields.computeIfAbsent(className, ignored -> new LinkedHashSet<>()).add(methodName);
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);

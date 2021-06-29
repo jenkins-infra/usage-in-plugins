@@ -1,6 +1,18 @@
 package org.jenkinsci.deprecatedusage;
 
 import org.apache.commons.io.IOUtils;
+import org.jenkinsci.deprecatedusage.report.DeprecatedUnusedApiReport;
+import org.jenkinsci.deprecatedusage.report.DeprecatedUsageByApiReport;
+import org.jenkinsci.deprecatedusage.report.DeprecatedUsageByPluginReport;
+import org.jenkinsci.deprecatedusage.report.LevelReportStorage;
+import org.jenkinsci.deprecatedusage.report.RecursiveUsageByPluginByLevelReport;
+import org.jenkinsci.deprecatedusage.report.RecursiveUsageByPluginFlatReducedReport;
+import org.jenkinsci.deprecatedusage.report.RecursiveUsageByPluginFlatReport;
+import org.jenkinsci.deprecatedusage.report.RecursiveUsageByPluginOnlyMethodsReport;
+import org.jenkinsci.deprecatedusage.search.DeprecatedApiSearchCriteria;
+import org.jenkinsci.deprecatedusage.search.OptionsBasedSearchCriteria;
+import org.jenkinsci.deprecatedusage.search.RecursiveSearchCriteria;
+import org.jenkinsci.deprecatedusage.search.SearchCriteria;
 import org.json.JSONObject;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
@@ -12,11 +24,13 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.sql.Array;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -28,9 +42,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.zip.ZipException;
 
 public class Main {
@@ -92,7 +108,15 @@ public class Main {
             // wait for async code to finish submitting
             metadataLoaded.await(10, TimeUnit.SECONDS);
             System.out.println("Downloading core files");
-            for (JenkinsFile core : downloader.synchronize(cores).get()) {
+
+            Collection<JenkinsFile> downloadedCores;
+            if (options.skipDownloads) {
+                downloadedCores = downloader.useExistingFiles(cores);
+            } else {
+                downloadedCores = downloader.synchronize(cores).get();
+            }
+            
+            for (JenkinsFile core : downloadedCores) {
                 try {
                     System.out.println("Analyzing deprecated APIs in " + core);
                     deprecatedApi.analyze(core.getFile());
@@ -105,17 +129,40 @@ public class Main {
 
             System.out.println("Downloading plugin files (out of " + plugins.size() + " total)");
 
-            Collection<JenkinsFile> downloadedPlugins = downloader.synchronize(plugins).get();
+            Collection<JenkinsFile> downloadedPlugins;
+            if (options.skipDownloads) {
+                downloadedPlugins = downloader.useExistingFiles(plugins);
+            } else {
+                downloadedPlugins = downloader.synchronize(plugins).get();
+            }
 
             System.out.println("Analyzing usage in plugins");
-            final List<DeprecatedUsage> deprecatedUsages = analyzeDeprecatedUsage(downloadedPlugins, deprecatedApi, executor, options.includePluginLibraries);
+            SearchCriteria deprecatedAndOptionCriteria = new OptionsBasedSearchCriteria().combineWith(new DeprecatedApiSearchCriteria(deprecatedApi));
+            
+            final List<DeprecatedUsage> deprecatedUsages = analyzeDeprecatedUsage(downloadedPlugins, deprecatedAndOptionCriteria, executor, options.includePluginLibraries);
 
-            Report[] reports = new Report[]{
-                    new DeprecatedUsageByPluginReport(deprecatedApi, deprecatedUsages, new File("output"), "usage-by-plugin"),
-                    new DeprecatedUnusedApiReport(deprecatedApi, deprecatedUsages, new File("output"), "deprecated-and-unused"),
-                    new DeprecatedUsageByApiReport(deprecatedApi, deprecatedUsages, new File("output"), "usage-by-api")
-            };
+            List<Report> reports = new ArrayList<>();
+            reports.add(new DeprecatedUsageByPluginReport(deprecatedApi, deprecatedUsages, new File("output"), "usage-by-plugin"));
+            reports.add(new DeprecatedUnusedApiReport(deprecatedApi, deprecatedUsages, new File("output"), "deprecated-and-unused"));
+            reports.add(new DeprecatedUsageByApiReport(deprecatedApi, deprecatedUsages, new File("output"), "usage-by-api"));
 
+            if (options.recursive) {
+                LevelReportStorage levelReportStorage = new LevelReportStorage();
+
+                // to prevent looping
+                Set<String> allMethodKeys = new HashSet<>();
+                
+                recursiveLoop(1, deprecatedUsages, levelReportStorage, allMethodKeys, newMethodsFound -> {
+                    RecursiveSearchCriteria recursiveSearchCriteria = new RecursiveSearchCriteria(newMethodsFound);
+                    return analyzeDeprecatedUsage(downloadedPlugins, recursiveSearchCriteria, executor, options.includePluginLibraries);
+                });
+
+                reports.add(new RecursiveUsageByPluginByLevelReport(levelReportStorage, new File("output"), "recursive-usage-plugin-level"));
+                reports.add(new RecursiveUsageByPluginFlatReport(levelReportStorage, new File("output"), "recursive-usage-flat"));
+                reports.add(new RecursiveUsageByPluginOnlyMethodsReport(levelReportStorage, new File("output"), "recursive-usage-only-methods"));
+                reports.add(new RecursiveUsageByPluginFlatReducedReport(levelReportStorage, new File("output"), "recursive-usage-flat-reduced"));
+            }
+            
             for (Report report : reports) {
                 report.generateJsonReport();
                 report.generateHtmlReport();
@@ -125,6 +172,30 @@ public class Main {
                     + DateFormat.getDateTimeInstance().format(new Date()));
         } finally {
             executor.shutdown();
+        }
+    }
+    
+    private void recursiveLoop(int level, List<DeprecatedUsage> previousUsages, LevelReportStorage levelReportStorage, Set<String> allMethodKeys, Function<Set<String>, List<DeprecatedUsage>> func) {
+        Set<String> methodsFound = new HashSet<>();
+        for (DeprecatedUsage recursiveUsage : previousUsages) {
+            methodsFound.addAll(recursiveUsage.getNewSignatures());
+        }
+
+        Set<String> newMethodsFound = methodsFound.stream().filter(s -> !allMethodKeys.contains(s)).collect(Collectors.toSet());
+        allMethodKeys.addAll(newMethodsFound);
+
+        if (newMethodsFound.size() > 0) {
+            System.out.println();
+            System.out.println("Level " + level + " done, found = " + newMethodsFound.size());
+            System.out.println();
+
+            levelReportStorage.addLevel(level, previousUsages);
+            
+            if (level < Options.get().recursiveMaxDepth) {
+                List<DeprecatedUsage> currUsages = func.apply(newMethodsFound);
+
+                recursiveLoop(level + 1, currUsages, levelReportStorage, allMethodKeys, func);
+            }
         }
     }
 
@@ -141,13 +212,12 @@ public class Main {
         }
     }
 
-    private static List<DeprecatedUsage> analyzeDeprecatedUsage(Collection<JenkinsFile> plugins, DeprecatedApi deprecatedApi,
-                                                                Executor executor, boolean scanPluginLibs)
-            throws InterruptedException, ExecutionException {
+    private static List<DeprecatedUsage> analyzeDeprecatedUsage(Collection<JenkinsFile> plugins, SearchCriteria searchCriteria,
+                                                                Executor executor, boolean scanPluginLibs) {
         List<CompletableFuture<DeprecatedUsage>> futures = new ArrayList<>();
         for (JenkinsFile plugin : plugins) {
             futures.add(CompletableFuture.supplyAsync(() -> {
-                DeprecatedUsage deprecatedUsage = new DeprecatedUsage(plugin.getName(), plugin.getVersion(), deprecatedApi, scanPluginLibs);
+                DeprecatedUsage deprecatedUsage = new DeprecatedUsage(plugin.getName(), plugin.getVersion(), searchCriteria, scanPluginLibs);
                 try {
                     deprecatedUsage.analyze(plugin.getFile());
                 } catch (final EOFException | ZipException | FileNotFoundException e) {
@@ -168,7 +238,12 @@ public class Main {
         final List<DeprecatedUsage> deprecatedUsages = new ArrayList<>();
         int i = 0;
         for (final Future<DeprecatedUsage> future : futures) {
-            final DeprecatedUsage deprecatedUsage = future.get();
+            final DeprecatedUsage deprecatedUsage;
+            try {
+                deprecatedUsage = future.get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
             deprecatedUsages.add(deprecatedUsage);
             i++;
             if (i % 10 == 0) {

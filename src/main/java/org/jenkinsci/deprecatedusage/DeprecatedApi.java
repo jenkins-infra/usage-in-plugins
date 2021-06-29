@@ -38,6 +38,14 @@ public class DeprecatedApi {
     public static String getMethodKey(String className, String name, String desc) {
         return className + SEPARATOR + name + desc;
     }
+    
+    public static String extractClassNameFromKey(String methodOrFieldKey) {
+        int sepIndex = methodOrFieldKey.indexOf(SEPARATOR);
+        if (sepIndex == -1) {
+            throw new IllegalArgumentException("Missing separator in that key");
+        }
+        return methodOrFieldKey.substring(0, sepIndex); 
+    }
 
     public static String getFieldKey(String className, String name, String desc) {
         return className + SEPARATOR + name; // + SEPARATOR + desc;
@@ -83,7 +91,7 @@ public class DeprecatedApi {
     }
 
     /**
-     * Implements ASM ClassVisitor.
+     * Record the methods that are deprecated and public/protected.
      */
     private class CalledClassVisitor extends ClassVisitor {
         private static final int OPCODE_PUBLIC = Opcodes.ACC_PUBLIC | Opcodes.ACC_PROTECTED;
