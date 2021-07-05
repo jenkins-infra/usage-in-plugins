@@ -170,21 +170,26 @@ public class DeprecatedUsage {
         if (!shouldAnalyze(className)) {
             return;
         }
-        if (searchCriteria.isLookingForClass(className)) {
-            classes.add(className);
-        } 
-        
-        final String method = DeprecatedApi.getMethodKey(className, name, desc);
-        if (searchCriteria.isLookingForMethod(method, className, name)) {
-            methods.add(method);
+
+        String methodKey = DeprecatedApi.getMethodKey(className, name, desc);
+
+        boolean lookingForClass = searchCriteria.isLookingForClass(className);
+        boolean lookingForMethodKey = searchCriteria.isLookingForMethod(methodKey, className, name);
+        if (lookingForClass || lookingForMethodKey) {
+            if (lookingForClass) {
+                classes.add(className);
+            }
+            if (lookingForMethodKey) {
+                methods.add(methodKey);
+            }
 
             String callerSignature = DeprecatedApi.getMethodKey(callerClassName, callerName, callerDesc);
             
-            providerToConsumers.computeIfAbsent(method, s -> new HashSet<>()).add(callerSignature);
-            consumerToProviders.computeIfAbsent(callerSignature, s -> new HashSet<>()).add(method);
+            providerToConsumers.computeIfAbsent(methodKey, s -> new HashSet<>()).add(callerSignature);
+            consumerToProviders.computeIfAbsent(callerSignature, s -> new HashSet<>()).add(methodKey);
         }
-        final List<String> superClassAndInterfaces = superClassAndInterfacesByClass
-                .get(className);
+
+        final List<String> superClassAndInterfaces = superClassAndInterfacesByClass.get(className);
         if (superClassAndInterfaces != null) {
             for (final String superClassOrInterface : superClassAndInterfaces) {
                 methodCalled(superClassOrInterface, name, desc, callerClassName, callerName, callerDesc);
@@ -206,23 +211,34 @@ public class DeprecatedUsage {
         return searchCriteria.shouldAnalyzeClass(className);
     }
 
-    void fieldCalled(String className, String name, String desc) {
-        // Calls to java and javax are ignored first
-        if (!isJavaClass(className)) {
-            if (searchCriteria.isLookingForClass(className)) {
+    void fieldCalled(String className, String name, String desc, String callerClassName, String callerName, String callerDesc) {
+        if (!shouldAnalyze(className)) {
+            return;
+        }
+
+        String fieldKey = DeprecatedApi.getFieldKey(className, name, desc);
+        
+        boolean lookingForClass = searchCriteria.isLookingForClass(className);
+        boolean lookingForFieldKey = searchCriteria.isLookingForField(fieldKey, className, name);
+        if (lookingForClass || lookingForFieldKey) {
+            if (lookingForClass) {
                 classes.add(className);
-            } else {
-                final String field = DeprecatedApi.getFieldKey(className, name, desc);
-                if (searchCriteria.isLookingForField(field, className, name)){
-                    fields.add(field);
-                }
-                final List<String> superClassAndInterfaces = superClassAndInterfacesByClass
-                        .get(className);
-                if (superClassAndInterfaces != null) {
-                    for (final String superClassOrInterface : superClassAndInterfaces) {
-                        fieldCalled(superClassOrInterface, name, desc);
-                    }
-                }
+            }
+            if (lookingForFieldKey) {
+                fields.add(fieldKey);
+            }
+
+            String callerSignature = DeprecatedApi.getMethodKey(callerClassName, callerName, callerDesc);
+
+            // the first pass will be done with fieldKey, but then, they are going to regular recursive method search
+            providerToConsumers.computeIfAbsent(fieldKey, s -> new HashSet<>()).add(callerSignature);
+            consumerToProviders.computeIfAbsent(callerSignature, s -> new HashSet<>()).add(fieldKey);
+        }
+
+        final List<String> superClassAndInterfaces = superClassAndInterfacesByClass.get(className);
+        if (superClassAndInterfaces != null) {
+            for (final String superClassOrInterface : superClassAndInterfaces) {
+                fieldCalled(superClassOrInterface, name, desc, callerClassName, callerName, callerDesc);
             }
         }
     }
@@ -309,21 +325,18 @@ public class DeprecatedUsage {
         @Deprecated
         @Override
         public void visitMethodInsn(int opcode, String owner, String name, String desc) {
-            // log("\t" + owner + " " + name + " " + desc);
             methodCalled(owner, name, desc, this.className, this.name, this.desc);
         }
 
         @Override
         public void visitMethodInsn(int opcode, String owner, String name, String desc,
                 boolean itf) {
-            // log("\t" + owner + " " + name + " " + desc);
             methodCalled(owner, name, desc, this.className, this.name, this.desc);
         }
 
         @Override
         public void visitFieldInsn(int opcode, String owner, String name, String desc) {
-            // log("\t" + owner + " " + name + " " + desc);
-            fieldCalled(owner, name, desc);
+            fieldCalled(owner, name, desc, this.className, this.name, this.desc);
         }
     }
 }

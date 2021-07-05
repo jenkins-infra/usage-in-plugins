@@ -1,6 +1,5 @@
 package org.jenkinsci.deprecatedusage;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.args4j.Option;
 
@@ -13,11 +12,11 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -91,50 +90,74 @@ public class Options {
     public static Options get() {
         return OPTIONS;
     }
+    
+    public void buildCache() {
+        if (additionalClassesFile != null) {
+            buildAdditionalClasses();
+        }
+        if (additionalMethodsFile != null) {
+            buildAdditionalMethodNames();
+        }
+        if (additionalFieldsFile != null) {
+            buildAdditionalFields();
+        }
+    }
 
     /**
      * Returns the additional classes if the related {@link #additionalClassesFile} has been specified.
      *
      * @throws IllegalArgumentException if called when {@link #additionalClassesFile} has not been specified.
      */
-    public static List<String> getAdditionalClasses() throws IllegalArgumentException {
-        if (additionalClasses != null) {
-            return additionalClasses;
+    public static List<String> getAdditionalClasses() {
+        if (additionalClasses == null) {
+            throw new IllegalArgumentException("Additional classes file option not provided, use '-C' or '--additionalClasses'");
         }
-        File additionalClassesFile = get().additionalClassesFile;
-        if (!additionalClassesFile.exists()) {
-            throw new IllegalArgumentException(
-                    "Additional classes file option provided, but file cannot be found (" + additionalClassesFile + ")");
-        }
+        return additionalClasses;
+    }
 
+    private void buildAdditionalClasses() {
+        Path path = additionalClassesFile.toPath();
+        if (Files.notExists(path)) {
+            throw new IllegalArgumentException("Additional classes file option provided, but file not found: " + path);
+        }
+        
+        additionalClasses = new ArrayList<>();
         try {
-            additionalClasses = new ArrayList<>();
-            for (String line : Files.readAllLines(additionalClassesFile.toPath(), StandardCharsets.UTF_8)) {
+            for (String line : Files.readAllLines(path, StandardCharsets.UTF_8)) {
                 String trimmedLine = line.trim();
                 if (!trimmedLine.startsWith("#")){
-                    additionalClasses.add(trimmedLine.replaceAll("\\.", "/"));
+                    String className = trimmedLine.replaceAll("\\.", "/");
+                    additionalClasses.add(className);
                 }
             }
-            
-            System.out.println(additionalClassesFile + " found, adding " + additionalClasses.size() + " classes");
-            for (String additionalClass : additionalClasses) {
-                System.out.println("\tadding " + additionalClass);
-            }
-            return additionalClasses;
         } catch (IOException e) {
-            throw new IllegalStateException(e);
+            throw new UncheckedIOException(e);
+        }
+
+        System.out.println("Additional classes: " + additionalClassesFile + " found, adding " + additionalClasses.size() + " classes");
+        for (String additionalClass : additionalClasses) {
+            System.out.println("\tadding " + additionalClass);
         }
     }
 
+    /**
+     * Returns the additional methods  if the related {@link #additionalMethodsFile} has been specified.
+     *
+     * @throws IllegalArgumentException if called when {@link #additionalMethodsFile} has not been specified.
+     */
     public static Map<String, Set<String>> getAdditionalMethodNames() {
-        if (additionalMethodNames != null) {
-            return additionalMethodNames;
+        if (additionalMethodNames == null) {
+            throw new IllegalArgumentException("Additional methods file option not provided, use '-M' or '--additionalMethods'");
         }
-        Path path = get().additionalMethodsFile.toPath();
+        return additionalMethodNames;
+    }
+
+    private void buildAdditionalMethodNames() {
+        Path path = additionalMethodsFile.toPath();
         if (Files.notExists(path)) {
             throw new IllegalArgumentException("Additional methods file option provided, but file not found: " + path);
         }
-        additionalMethodNames = new ConcurrentHashMap<>();
+        additionalMethodNames = new HashMap<>();
         try {
             for (String line : Files.readAllLines(path, StandardCharsets.UTF_8)) {
                 String trimmedLine = line.trim();
@@ -150,18 +173,30 @@ public class Options {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-        return additionalMethodNames;
+
+        System.out.println("Additional methods: " + additionalMethodNames.values().stream().mapToInt(Set::size).sum());
     }
 
+
+    /**
+     * Returns the additional fields if the related {@link #additionalFieldsFile} has been specified.
+     *
+     * @throws IllegalArgumentException if called when {@link #additionalFieldsFile} has not been specified.
+     */
     public static Map<String, Set<String>> getAdditionalFields() {
-        if (additionalFields != null) {
-            return additionalFields;
+        if (additionalFields == null) {
+            throw new IllegalArgumentException("Additional fields file option not provided, use '-F' or '--additionalFields'");
         }
-        Path path = get().additionalFieldsFile.toPath();
+        return additionalFields;
+    }
+
+    private void buildAdditionalFields() {
+        Path path = additionalFieldsFile.toPath();
         if (Files.notExists(path)) {
             throw new IllegalArgumentException("Additional fields file option provided, but file not found: " + path);
         }
-        additionalFields = new ConcurrentHashMap<>();
+        
+        additionalFields = new HashMap<>();
         try {
             for (String line : Files.readAllLines(path, StandardCharsets.UTF_8)) {
                 String trimmedLine = line.trim();
@@ -177,6 +212,7 @@ public class Options {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-        return additionalFields;
+
+        System.out.println("Additional fields: " + additionalFields.values().stream().mapToInt(Set::size).sum());
     }
 }

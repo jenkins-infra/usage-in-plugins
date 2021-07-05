@@ -56,7 +56,6 @@ public class Main {
     }
 
     public void doMain(String[] args) throws Exception {
-
         final Options options = Options.get();
         final CmdLineParser commandLineParser = new CmdLineParser(options);
         try {
@@ -78,6 +77,8 @@ public class Main {
             h.setLevel(Level.ALL);
             l.addHandler(h);
         }
+
+        options.buildCache();
 
         final ExecutorService executor = Executors.newWorkStealingPool();
         final Downloader downloader = new Downloader(executor, options.maxConcurrentDownloads);

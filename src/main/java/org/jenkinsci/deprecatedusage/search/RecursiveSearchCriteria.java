@@ -43,7 +43,7 @@ public class RecursiveSearchCriteria implements SearchCriteria {
 
     @Override
     public boolean isLookingForClass(String className) {
-        return relatedClasses.contains(className);
+        return false;
     }
 
     @Override
