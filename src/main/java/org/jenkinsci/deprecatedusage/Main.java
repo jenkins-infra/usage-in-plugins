@@ -142,18 +142,23 @@ public class Main {
             
             final List<DeprecatedUsage> deprecatedUsages = analyzeDeprecatedUsage(downloadedPlugins, deprecatedAndOptionCriteria, executor, options.includePluginLibraries);
 
+            System.out.println("Initial analysis done");
             List<Report> reports = new ArrayList<>();
             reports.add(new DeprecatedUsageByPluginReport(deprecatedApi, deprecatedUsages, new File("output"), "usage-by-plugin"));
             reports.add(new DeprecatedUnusedApiReport(deprecatedApi, deprecatedUsages, new File("output"), "deprecated-and-unused"));
             reports.add(new DeprecatedUsageByApiReport(deprecatedApi, deprecatedUsages, new File("output"), "usage-by-api"));
 
+            for (Report report : reports) {
+                report.generateJsonReport();
+                report.generateHtmlReport();
+            }
+
             if (options.recursive) {
+                System.out.println("Entering recursive mode");
+                reports = new ArrayList<>();
                 LevelReportStorage levelReportStorage = new LevelReportStorage();
 
-                // to prevent looping
-                Set<String> allMethodKeys = new HashSet<>();
-                
-                recursiveLoop(1, deprecatedUsages, levelReportStorage, allMethodKeys, newMethodsFound -> {
+                loopForRecursiveSearch(deprecatedUsages, levelReportStorage, newMethodsFound -> {
                     RecursiveSearchCriteria recursiveSearchCriteria = new RecursiveSearchCriteria(newMethodsFound);
                     return analyzeDeprecatedUsage(downloadedPlugins, recursiveSearchCriteria, executor, options.includePluginLibraries);
                 });
@@ -162,11 +167,11 @@ public class Main {
                 reports.add(new RecursiveUsageByPluginFlatReport(levelReportStorage, new File("output"), "recursive-usage-flat"));
                 reports.add(new RecursiveUsageByPluginOnlyMethodsReport(levelReportStorage, new File("output"), "recursive-usage-only-methods"));
                 reports.add(new RecursiveUsageByPluginFlatReducedReport(levelReportStorage, new File("output"), "recursive-usage-flat-reduced"));
-            }
-            
-            for (Report report : reports) {
-                report.generateJsonReport();
-                report.generateHtmlReport();
+
+                for (Report report : reports) {
+                    report.generateJsonReport();
+                    report.generateHtmlReport();
+                }
             }
 
             System.out.println("duration : " + (System.currentTimeMillis() - start) + " ms at "
@@ -175,8 +180,46 @@ public class Main {
             executor.shutdown();
         }
     }
-    
-    private void recursiveLoop(int level, List<DeprecatedUsage> previousUsages, LevelReportStorage levelReportStorage, Set<String> allMethodKeys, Function<Set<String>, List<DeprecatedUsage>> func) {
+
+    /**
+     * Not a recursion itself to prevent memory issue
+     */
+    private void loopForRecursiveSearch(List<DeprecatedUsage> previousUsages, LevelReportStorage levelReportStorage, Function<Set<String>, List<DeprecatedUsage>> func) {
+        int level = 1;
+
+        List<DeprecatedUsage> currUsages = previousUsages;
+        Set<String> allMethodKeys = new HashSet<>();
+
+        boolean running = true;
+        while (running) {
+            System.out.println();
+            System.out.print("Level " + level + " done");
+            Set<String> newMethodsFound = computeNewMethodKeys(currUsages, allMethodKeys);
+
+            if (newMethodsFound.size() > 0) {
+                System.out.print(", new consumers found = " + newMethodsFound.size());
+                levelReportStorage.addLevel(level, previousUsages);
+
+                System.out.print(", total consumers found = " + levelReportStorage.globalConsumerToProviders.size());
+                System.out.println(", total providers found = " + levelReportStorage.globalProviderToConsumers.size());
+                System.out.println();
+
+                if (level < Options.get().recursiveMaxDepth) {
+                    level++;
+
+                    currUsages = func.apply(newMethodsFound);
+                } else {
+                    System.out.println("Max depth (" + Options.get().recursiveMaxDepth + ") reached.");
+                    running = false;
+                }
+            } else {
+                System.out.println(", without new methods");
+                running = false;
+            }
+        }
+    }
+
+    private Set<String> computeNewMethodKeys(List<DeprecatedUsage> previousUsages, Set<String> allMethodKeys) {
         Set<String> methodsFound = new HashSet<>();
         for (DeprecatedUsage recursiveUsage : previousUsages) {
             methodsFound.addAll(recursiveUsage.getNewSignatures());
@@ -184,20 +227,8 @@ public class Main {
 
         Set<String> newMethodsFound = methodsFound.stream().filter(s -> !allMethodKeys.contains(s)).collect(Collectors.toSet());
         allMethodKeys.addAll(newMethodsFound);
-
-        if (newMethodsFound.size() > 0) {
-            System.out.println();
-            System.out.println("Level " + level + " done, found = " + newMethodsFound.size());
-            System.out.println();
-
-            levelReportStorage.addLevel(level, previousUsages);
-            
-            if (level < Options.get().recursiveMaxDepth) {
-                List<DeprecatedUsage> currUsages = func.apply(newMethodsFound);
-
-                recursiveLoop(level + 1, currUsages, levelReportStorage, allMethodKeys, func);
-            }
-        }
+        
+        return newMethodsFound;
     }
 
     /**

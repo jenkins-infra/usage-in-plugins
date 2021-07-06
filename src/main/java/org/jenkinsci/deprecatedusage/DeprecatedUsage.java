@@ -68,6 +68,14 @@ public class DeprecatedUsage {
         if (IGNORED_PLUGINS.contains(pluginFile.getName())) {
             return;
         }
+
+        if (this.includePluginLibraries) {
+            long fileSize = pluginFile.length();
+            if (fileSize > 50 * 1024 * 1024) {
+                System.out.println(pluginFile.getName() + ": " + fileSize / 1024 / 1024 + " MB");
+            }
+        }
+
         analyzeWithClassVisitor(pluginFile, indexerClassVisitor);
         analyzeWithClassVisitor(pluginFile, classVisitor);
     }
@@ -85,8 +93,8 @@ public class DeprecatedUsage {
                     InputStream is = warReader.getInputStream();
                     analyze(is, aClassVisitor);
                 } catch (Exception e) {
-                    System.err.println("Failed to fully analyze " + pluginFile + ".  " + fileName + " not scanned due to -> ");
-                    e.printStackTrace();
+                    System.err.println("Failed to fully analyze " + pluginFile + ".  " + fileName + " not scanned due to " + e.getMessage());
+//                    e.printStackTrace();
                 }
                 fileName = warReader.nextClass();
             }

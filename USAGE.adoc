@@ -92,14 +92,18 @@ hudson.model.Hudson
 
 ==== Finding Usage by Package
 
-By using just a package name instead of the fully qualified class name in "Method" or "Field" options, this searches for classes that start with the same specified package.
+By using just a package name instead of the fully qualified class name in "Class", "Method" or "Field" options, this searches for classes that start with the same specified package.
 For example, the following snippet would search for usage of methods or fields named `toString` in any classes inside the `hudson.util` package or its descendants.
-Note the trailing `.` before the `#` separator which makes the search more specific to `hudson.util` rather than also including the hypothetical package `hudson.utils` or `hudson.utility`.
+
+By default, the package name is check for exactness, but you can customize it by adding `*` at the beginning, the end or both,
+to have a `startsWith`, `endsWith` or `contains` behavior respectively.
 
 [source]
 ----
-hudson.util.#toString
+hudson.util.*#toString
 ----
+
+Note the trailing `.*` before the `#` separator which makes the search more specific to `hudson.util` rather than also including the hypothetical package `hudson.utils` or `hudson.utility`.
 
 ==== Additional information
 
@@ -111,6 +115,11 @@ The "class full name" can be written with `.` or with `/` without incidence.
 
 The default parallelism settings will allow up to 4x the number of available CPUs downloads at a time.
 This can be overridden by the `-D N` or `--downloadConcurrent=N` option for some number `N`.
+
+=== Including libraries from plugins
+
+The plugins often include libraries in addition to their direct code. By default they are not included.
+This can be overridden by the `-p` or `--includePluginLibs=N`.
 
 === Configuring Recursion
 
