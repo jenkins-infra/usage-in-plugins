@@ -9,10 +9,10 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -27,9 +27,10 @@ public class Options {
 
     private static final String DEFAULT_UPDATE_CENTER_URL = "https://updates.jenkins-ci.org/update-center.json";
     private static final Options OPTIONS = new Options();
-    private static List<String> additionalClasses;
+    private static Set<String> additionalClasses;
     private static Map<String, Set<String>> additionalMethodNames;
     private static Map<String, Set<String>> additionalFields;
+    private static Set<String> limitedScopeOfPlugins;
 
     @Option(name = "-h", aliases = "--help", usage = "Shows help")
     public boolean help;
@@ -45,6 +46,9 @@ public class Options {
 
     @Option(name = "-F", aliases = "--additionalFields", metaVar = "FILENAME", usage = "File name for additional fields to scan")
     public File additionalFieldsFile;
+
+    @Option(name = "-l", aliases = "--limitPlugins", metaVar = "FILENAME", usage = "File name for the limitation of the scope of plugins to scan")
+    public File limitPluginsFile;
 
     @Option(name = "-i", aliases = "--onlyIncludeSpecified", usage = "Only include in the report the specified classes/methods/fields")
     public boolean onlyIncludeSpecified;
@@ -101,6 +105,9 @@ public class Options {
         if (additionalFieldsFile != null) {
             buildAdditionalFields();
         }
+        if (limitPluginsFile != null) {
+            buildLimitedScopeOfPlugins();
+        }
     }
 
     /**
@@ -108,7 +115,7 @@ public class Options {
      *
      * @throws IllegalArgumentException if called when {@link #additionalClassesFile} has not been specified.
      */
-    public static List<String> getAdditionalClasses() {
+    public static Set<String> getAdditionalClasses() {
         if (additionalClasses == null) {
             throw new IllegalArgumentException("Additional classes file option not provided, use '-C' or '--additionalClasses'");
         }
@@ -121,11 +128,11 @@ public class Options {
             throw new IllegalArgumentException("Additional classes file option provided, but file not found: " + path);
         }
         
-        additionalClasses = new ArrayList<>();
+        additionalClasses = new HashSet<>();
         try {
             for (String line : Files.readAllLines(path, StandardCharsets.UTF_8)) {
                 String trimmedLine = line.trim();
-                if (!trimmedLine.startsWith("#")){
+                if (!trimmedLine.isEmpty() && !trimmedLine.startsWith("#")){
                     String className = trimmedLine.replaceAll("\\.", "/");
                     additionalClasses.add(className);
                 }
@@ -161,7 +168,7 @@ public class Options {
         try {
             for (String line : Files.readAllLines(path, StandardCharsets.UTF_8)) {
                 String trimmedLine = line.trim();
-                if (!trimmedLine.startsWith("#")){
+                if (!trimmedLine.isEmpty() && !trimmedLine.startsWith("#")){
                     int hashIndex = trimmedLine.indexOf('#');
                     if (hashIndex != -1) {
                         String className = trimmedLine.substring(0, hashIndex).replaceAll("\\.", "/");
@@ -200,7 +207,7 @@ public class Options {
         try {
             for (String line : Files.readAllLines(path, StandardCharsets.UTF_8)) {
                 String trimmedLine = line.trim();
-                if (!trimmedLine.startsWith("#")) {
+                if (!trimmedLine.isEmpty() && !trimmedLine.startsWith("#")) {
                     int hashIndex = trimmedLine.indexOf('#');
                     if (hashIndex != -1) {
                         String className = trimmedLine.substring(0, hashIndex).replaceAll("\\.", "/");
@@ -214,5 +221,38 @@ public class Options {
         }
 
         System.out.println("Additional fields: " + additionalFields.values().stream().mapToInt(Set::size).sum());
+    }
+
+    /**
+     * Returns the limited scope of plugins if the related {@link #limitPluginsFile} has been specified.
+     *
+     * @throws IllegalArgumentException if called when {@link #limitPluginsFile} has not been specified.
+     */
+    public static Set<String> getLimitedScopeOfPlugins() {
+        if (limitedScopeOfPlugins == null) {
+            throw new IllegalArgumentException("Limited scope of plugin file option not provided, use '-l' or '--limitPlugins'");
+        }
+        return limitedScopeOfPlugins;
+    }
+    
+    private void buildLimitedScopeOfPlugins() {
+        Path path = limitPluginsFile.toPath();
+        if (Files.notExists(path)) {
+            throw new IllegalArgumentException("Limited scope of plugin file option provided, but file not found: " + path);
+        }
+
+        limitedScopeOfPlugins = new HashSet<>();
+        try {
+            for (String line : Files.readAllLines(path, StandardCharsets.UTF_8)) {
+                String trimmedLine = line.trim();
+                if (!trimmedLine.isEmpty() && !trimmedLine.startsWith("#")) {
+                    limitedScopeOfPlugins.add(trimmedLine);
+                }
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+        System.out.println("Limited scope of plugins: " + limitedScopeOfPlugins.size());
     }
 }

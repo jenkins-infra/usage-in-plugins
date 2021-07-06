@@ -46,14 +46,10 @@ public class LevelReportStorage {
             Map<String, Set<String>> currPluginProviderToConsumers = new HashMap<>(u.getProviderToConsumers());
             Map<String, Set<String>> currPluginConsumerToProviders = new HashMap<>(u.getConsumerToProviders());
             if (!currPluginProviderToConsumers.isEmpty()) {
-                List<String> limitedKeys;
-                if (currPluginProviderToConsumers.size() > 100) {
-                    limitedKeys = new ArrayList<>(currPluginProviderToConsumers.keySet()).subList(0, 100);
-                } else {
-                    limitedKeys = new ArrayList<>(currPluginProviderToConsumers.keySet());
-                }
-                for (int i = 0; i < limitedKeys.size(); i++) {
-                    String provider = limitedKeys.get(i);
+                // kept as a "for i" format to ease debug in case of very large number of occurrences
+                List<String> keys = new ArrayList<>(currPluginProviderToConsumers.keySet());
+                for (int i = 0; i < keys.size(); i++) {
+                    String provider = keys.get(i);
                     Set<String> consumers = currPluginProviderToConsumers.get(provider);
                     globalProviderToConsumers.computeIfAbsent(provider, s -> new HashSet<>()).addAll(consumers);
 

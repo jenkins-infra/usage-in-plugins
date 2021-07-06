@@ -105,6 +105,11 @@ hudson.util.*#toString
 
 Note the trailing `.*` before the `#` separator which makes the search more specific to `hudson.util` rather than also including the hypothetical package `hudson.utils` or `hudson.utility`.
 
+==== Limit scope of plugins
+By default all the plugins included in the update-center JSON will be analysed.
+You can use the arguments `-l filename.txt` or `--limitPlugins filename.txt` to limit which plugins you can want to analyse.
+The file must contain the artifact ID of the plugins, one per line.
+
 ==== Additional information
 
 Multiple entries can be put in the file related to those options, one per line.

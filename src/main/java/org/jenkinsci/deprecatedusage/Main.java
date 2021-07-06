@@ -108,12 +108,13 @@ public class Main {
 
             // wait for async code to finish submitting
             metadataLoaded.await(10, TimeUnit.SECONDS);
-            System.out.println("Downloading core files");
 
             Collection<JenkinsFile> downloadedCores;
             if (options.skipDownloads) {
+                System.out.println("Checking core files");
                 downloadedCores = downloader.useExistingFiles(cores);
             } else {
+                System.out.println("Downloading core files");
                 downloadedCores = downloader.synchronize(cores).get();
             }
             
@@ -128,12 +129,21 @@ public class Main {
                 }
             }
 
-            System.out.println("Downloading plugin files (out of " + plugins.size() + " total)");
+            if (options.limitPluginsFile != null) {
+                int previousSize = plugins.size();
+                Set<String> limitedScopeOfPlugins = Options.getLimitedScopeOfPlugins();
+                plugins.removeIf(jenkinsFile -> !limitedScopeOfPlugins.contains(jenkinsFile.getName()));
+                int afterSize = plugins.size();
+
+                System.out.println("By using a limited scope of plugins, the list of plugins went from " + previousSize + " to " + afterSize);
+            }
 
             Collection<JenkinsFile> downloadedPlugins;
             if (options.skipDownloads) {
+                System.out.println("Checking plugin files (out of " + plugins.size() + " total)");
                 downloadedPlugins = downloader.useExistingFiles(plugins);
             } else {
+                System.out.println("Downloading plugin files (out of " + plugins.size() + " total)");
                 downloadedPlugins = downloader.synchronize(plugins).get();
             }
 
@@ -197,7 +207,7 @@ public class Main {
             Set<String> newMethodsFound = computeNewMethodKeys(currUsages, allMethodKeys);
 
             if (newMethodsFound.size() > 0) {
-                System.out.print(", new consumers found = " + newMethodsFound.size());
+                System.out.print(", new methods found = " + newMethodsFound.size());
                 levelReportStorage.addLevel(level, previousUsages);
 
                 System.out.print(", total consumers found = " + levelReportStorage.globalConsumerToProviders.size());
@@ -237,8 +247,7 @@ public class Main {
      */
     private static void addClassesToAnalyze(DeprecatedApi deprecatedApi) {
         if (Options.get().additionalClassesFile != null) {
-            List<String> additionalClasses = Options.getAdditionalClasses();
-            deprecatedApi.addClasses(additionalClasses);
+            deprecatedApi.addClasses(Options.getAdditionalClasses());
         } else {
             System.out.println("No 'additionalClassesFile' option, only already deprecated class will be searched for");
         }
