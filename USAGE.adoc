@@ -135,6 +135,13 @@ There is a builtin anti-loop mechanism to prevent methods calling a method alrea
 
 The reports containing "recursive" in their name will contain information only in this case this option is enabled.
 
+=== Advanced search related to Jenkins Core
+
+When you search for something, the tool will look at the plugins, not including Jenkins Core.
+With `--includeCore`, you can also scan the Core code for the desired pattern.
+This can be extended to also look for Core libraries, like for plugins, with `--includeCoreLibs`.
+As the tool is moving to a more broader search tool capacities compared to the original "deprecation search", there is an option to ignore the deprecated calls, by passing `--ignoreDeprecated`.
+
 === Development utilities
 
 The default behavior is to download the configure Update Center metadata and then compared the local cache (using checksum) in order to determine which cores/plugins need to be downloaded.

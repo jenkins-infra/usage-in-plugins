@@ -75,7 +75,7 @@ public class DeprecatedApi {
     }
 
     public Set<String> getClasses() {
-        return  classes;
+        return classes;
     }
 
     public Set<String> getMethods() {

@@ -117,15 +117,17 @@ public class Main {
                 System.out.println("Downloading core files");
                 downloadedCores = downloader.synchronize(cores).get();
             }
-            
-            for (JenkinsFile core : downloadedCores) {
-                try {
-                    System.out.println("Analyzing deprecated APIs in " + core);
-                    deprecatedApi.analyze(core.getFile());
-                    System.out.println("Finished deprecated API analysis in " + core);
-                } catch (IOException e) {
-                    System.out.println("Error analyzing deprecated APIs in " + core);
-                    System.out.println(e.toString());
+
+            if (!options.ignoreDeprecated) {
+                for (JenkinsFile core : downloadedCores) {
+                    try {
+                        System.out.println("Analyzing deprecated APIs in " + core);
+                        deprecatedApi.analyze(core.getFile());
+                        System.out.println("Finished deprecated API analysis in " + core);
+                    } catch (IOException e) {
+                        System.out.println("Error analyzing deprecated APIs in " + core);
+                        System.out.println(e.toString());
+                    }
                 }
             }
 
@@ -150,8 +152,18 @@ public class Main {
             System.out.println("Analyzing usage in plugins");
             SearchCriteria deprecatedAndOptionCriteria = new OptionsBasedSearchCriteria().combineWith(new DeprecatedApiSearchCriteria(deprecatedApi));
             
-            final List<DeprecatedUsage> deprecatedUsages = analyzeDeprecatedUsage(downloadedPlugins, deprecatedAndOptionCriteria, executor, options.includePluginLibraries);
+            List<DeprecatedUsage> deprecatedUsages;
+            if (options.includeCore) {
+                List<DeprecatedUsage> fromCores = analyzeDeprecatedUsage(downloadedCores, deprecatedAndOptionCriteria, executor, options.includeCoreLibraries);
+                List<DeprecatedUsage> fromPlugins = analyzeDeprecatedUsage(downloadedPlugins, deprecatedAndOptionCriteria, executor, options.includePluginLibraries);
 
+                List<DeprecatedUsage> all = new ArrayList<>(fromPlugins);
+                all.addAll(fromCores);
+                deprecatedUsages = all;
+            } else {
+                deprecatedUsages = analyzeDeprecatedUsage(downloadedPlugins, deprecatedAndOptionCriteria, executor, options.includePluginLibraries);
+            }
+            
             System.out.println("Initial analysis done");
             List<Report> reports = new ArrayList<>();
             reports.add(new DeprecatedUsageByPluginReport(deprecatedApi, deprecatedUsages, new File("output"), "usage-by-plugin"));
@@ -170,7 +182,16 @@ public class Main {
 
                 loopForRecursiveSearch(deprecatedUsages, levelReportStorage, newMethodsFound -> {
                     RecursiveSearchCriteria recursiveSearchCriteria = new RecursiveSearchCriteria(newMethodsFound);
-                    return analyzeDeprecatedUsage(downloadedPlugins, recursiveSearchCriteria, executor, options.includePluginLibraries);
+                    if (options.includeCore) {
+                        List<DeprecatedUsage> fromCores = analyzeDeprecatedUsage(downloadedCores, recursiveSearchCriteria, executor, options.includeCoreLibraries);
+                        List<DeprecatedUsage> fromPlugins = analyzeDeprecatedUsage(downloadedPlugins, recursiveSearchCriteria, executor, options.includePluginLibraries);
+
+                        List<DeprecatedUsage> all = new ArrayList<>(fromPlugins);
+                        all.addAll(fromCores);
+                        return all;
+                    } else {
+                        return analyzeDeprecatedUsage(downloadedPlugins, recursiveSearchCriteria, executor, options.includePluginLibraries);
+                    }
                 });
 
                 reports.add(new RecursiveUsageByPluginByLevelReport(levelReportStorage, new File("output"), "recursive-usage-plugin-level"));
@@ -208,8 +229,9 @@ public class Main {
 
             if (newMethodsFound.size() > 0) {
                 System.out.print(", new methods found = " + newMethodsFound.size());
-                levelReportStorage.addLevel(level, previousUsages);
+                levelReportStorage.addLevel(level, currUsages);
 
+                // a new method that is never used as a provider will not impact globalXxxToYyy
                 System.out.print(", total consumers found = " + levelReportStorage.globalConsumerToProviders.size());
                 System.out.println(", total providers found = " + levelReportStorage.globalProviderToConsumers.size());
                 System.out.println();

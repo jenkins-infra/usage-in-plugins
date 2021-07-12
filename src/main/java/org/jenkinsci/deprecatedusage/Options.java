@@ -50,11 +50,20 @@ public class Options {
     @Option(name = "-l", aliases = "--limitPlugins", metaVar = "FILENAME", usage = "File name for the limitation of the scope of plugins to scan")
     public File limitPluginsFile;
 
+    @Option(name = "--ignoreDeprecated", usage = "Remove the deprecation part of the search criteria")
+    public boolean ignoreDeprecated;
+
     @Option(name = "-i", aliases = "--onlyIncludeSpecified", usage = "Only include in the report the specified classes/methods/fields")
     public boolean onlyIncludeSpecified;
 
     @Option(name = "-p", aliases = "--includePluginLibs", usage = "Also scan libraries bundled inside plugins")
     public boolean includePluginLibraries;
+
+    @Option(name = "--includeCore", usage = "Scan the Cores in addition to the plugins")
+    public boolean includeCore;
+
+    @Option(name = "--includeCoreLibs", usage = "Also scan libraries bundled inside cores")
+    public boolean includeCoreLibraries;
 
     @Option(name = "--onlyIncludeJenkinsClasses", usage = "Only include in the report Jenkins related classes (jenkins.*, hudson.*, etc.")
     public boolean onlyIncludeJenkinsClasses;
