@@ -17,6 +17,7 @@ import org.apache.commons.io.IOUtils;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
@@ -37,6 +38,21 @@ public class DeprecatedUsage {
     private final ClassVisitor classVisitor = new CallersClassVisitor();
     private final Map<String, List<String>> superClassAndInterfacesByClass = new HashMap<>();
 
+    private static final Set<String> SERIALIZABLE_SUPERTYPES = new HashSet<>(Arrays.asList(
+            "hudson/FilePath$FileCallable",
+            "hudson/remoting/Callable",
+            "hudson/remoting/DelegatingCallable",
+            "java/io/Serializable",
+            "jenkins/MasterToSlaveFileCallable",
+            "jenkins/SlaveToMasterFileCallable",
+            "jenkins/security/MasterToSlaveCallable",
+            /* Not a risk:
+            "jenkins/security/NotReallyRoleSensitiveCallable",
+            */
+            "jenkins/security/SlaveToMasterCallable",
+            "org/jenkinsci/remoting/SerializableOnlyOverRemoting"
+    ));
+
     public DeprecatedUsage(String pluginName, String pluginVersion, DeprecatedApi deprecatedApi, boolean includePluginLibraries) {
         super();
         this.plugin = new Plugin(pluginName, pluginVersion);
@@ -49,7 +65,6 @@ public class DeprecatedUsage {
             return;
         }
         analyzeWithClassVisitor(pluginFile, indexerClassVisitor);
-        analyzeWithClassVisitor(pluginFile, classVisitor);
     }
 
     
@@ -239,6 +254,8 @@ public class DeprecatedUsage {
             super(Opcodes.ASM9);
         }
 
+        String owner;
+
         @Override
         public void visit(int version, int access, String name, String signature, String superName,
                 String[] interfaces) {
@@ -257,10 +274,18 @@ public class DeprecatedUsage {
                     }
                 }
             }
-            if (!superClassAndInterfaces.isEmpty()) {
-                superClassAndInterfacesByClass.put(name, superClassAndInterfaces);
-            }
+            superClassAndInterfaces.retainAll(SERIALIZABLE_SUPERTYPES);
+            owner = superClassAndInterfaces.isEmpty() ? null : name;
         }
+
+        @Override
+        public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
+            if (owner != null && descriptor.equals("Lhudson/FilePath;")) {
+                fields.add(DeprecatedApi.getFieldKey(owner, name, null));
+            }
+            return null;
+        }
+
     }
 
     /**

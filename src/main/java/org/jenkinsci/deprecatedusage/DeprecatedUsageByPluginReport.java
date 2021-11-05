@@ -21,6 +21,7 @@ public class DeprecatedUsageByPluginReport extends Report {
 
     @Override
     protected void generateHtmlReport(Writer writer) throws IOException {
+        // TODO option to sort by https://stats.jenkins.io/plugin-installation-trend/latestNumbers.json
         SortedSet<DeprecatedUsage> set = new TreeSet<>(Comparator.comparing(DeprecatedUsage::getPlugin));
         set.addAll(usages);
 
@@ -64,6 +65,10 @@ public class DeprecatedUsageByPluginReport extends Report {
     protected void generateJsonReport(Writer writer) throws IOException {
         JSONObject map = new JSONObject();
         for (DeprecatedUsage usage : usages) {
+            if (!usage.hasDeprecatedUsage()) {
+                continue;
+            }
+
             JSONObject plugin = new JSONObject();
 
             plugin.put("plugin", usage.getPlugin().toString());

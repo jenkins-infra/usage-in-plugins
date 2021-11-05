@@ -122,6 +122,7 @@ public class DeprecatedUsageByApiReport extends Report {
 
     @Override
     protected void generateJsonReport(Writer writer) throws IOException {
+        // TODO this library rewrites everything to an unsorted HashMap
         JSONObject map = new JSONObject();
 
         map.put("classes", deprecatedClassesToPlugins);
