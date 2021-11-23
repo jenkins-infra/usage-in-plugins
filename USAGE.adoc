@@ -124,7 +124,7 @@ This can be overridden by the `-D N` or `--downloadConcurrent=N` option for some
 === Including libraries from plugins
 
 The plugins often include libraries in addition to their direct code. By default they are not included.
-This can be overridden by the `-p` or `--includePluginLibs=N`.
+This can be overridden by the `-p` or `--includePluginLibs=true`.
 
 === Configuring Recursion
 
