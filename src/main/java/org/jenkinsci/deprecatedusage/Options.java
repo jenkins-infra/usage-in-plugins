@@ -59,6 +59,9 @@ public class Options {
     @Option(name = "-p", aliases = "--includePluginLibs", usage = "Also scan libraries bundled inside plugins")
     public boolean includePluginLibraries;
 
+    @Option(name = "-P", aliases = "--onlyPlugins", usage = "Only scan plugins with the specified plugin IDs (comma separated)")
+    public String plugins;
+
     @Option(name = "--includeCore", usage = "Scan the Cores in addition to the plugins")
     public boolean includeCore;
 
@@ -95,6 +98,13 @@ public class Options {
             return Collections.singletonList(DEFAULT_UPDATE_CENTER_URL);
         }
         return Arrays.stream(urls).map(String::trim).collect(Collectors.toList());
+    }
+
+    public boolean shouldScanPlugin(String pluginId) {
+        if (plugins == null) {
+            return true;
+        }
+        return Arrays.stream(plugins.split(",")).map(String::trim).anyMatch(it -> it.equals(pluginId));
     }
 
     /**

@@ -14,7 +14,7 @@ public class UpdateCenter {
     private final List<JenkinsFile> plugins = new ArrayList<>();
 
     public UpdateCenter(JSONObject metadata) {
-        JSONObject jsonCore = metadata.getJSONObject("core");
+        JSONObject jsonCore = metadata.optJSONObject("core");
         core = parse(jsonCore);
         JSONObject jsonPlugins = metadata.getJSONObject("plugins");
         for (Object pluginId : jsonPlugins.keySet()) {
@@ -25,6 +25,9 @@ public class UpdateCenter {
     }
 
     private static JenkinsFile parse(JSONObject jsonObject) throws JSONException {
+        if (jsonObject == null) {
+            return null;
+        }
         final String wiki;
         if (jsonObject.has("wiki")) {
             wiki = jsonObject.getString("wiki");

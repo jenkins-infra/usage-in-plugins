@@ -11,6 +11,7 @@ import java.io.UncheckedIOException;
 import java.net.HttpURLConnection;
 import java.net.SocketException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.DigestException;
@@ -119,23 +120,27 @@ public class Downloader {
         private void doRun() throws IOException, DigestException {
             URL url = new URL(file.getUrl());
             try {
-                HttpURLConnection request = (HttpURLConnection) url.openConnection();
-                int responseCode = request.getResponseCode();
-                if (responseCode == 502) {
-                    throw new IOException("Flaky Update Center returned HTTP 502");
-                } else if (responseCode >= 400) {
-                    throw new HttpResponseException(responseCode, request.getResponseMessage());
+                URLConnection con = url.openConnection();
+                if (url.getProtocol().equalsIgnoreCase("https") || url.getProtocol().equalsIgnoreCase("http")) {
+                    HttpURLConnection request = (HttpURLConnection) url.openConnection();
+                    int responseCode = request.getResponseCode();
+                    if (responseCode == 502) {
+                        throw new IOException("Flaky Update Center returned HTTP 502");
+                    } else if (responseCode >= 400) {
+                        throw new HttpResponseException(responseCode, request.getResponseMessage());
+                    }
+                } else if (!url.getProtocol().equalsIgnoreCase("file")) {
+                    throw new IOException("Only http(s) and file URLs are supported");
+                }
+                long fileSize;
+                try (InputStream in = con.getInputStream();
+                     OutputStream out = file.getFileOutputStream()) {
+                    fileSize = IOUtils.copyLarge(in, out);
+                }
+                if (file.isFileMessageDigestValid()) {
+                    System.out.printf("Downloaded %s @ %.2f kiB%n", file.getUrl(), (fileSize / 1024.0));
                 } else {
-                    long fileSize;
-                    try (InputStream in = request.getInputStream();
-                         OutputStream out = file.getFileOutputStream()) {
-                        fileSize = IOUtils.copyLarge(in, out);
-                    }
-                    if (file.isFileMessageDigestValid()) {
-                        System.out.printf("Downloaded %s @ %.2f kiB%n", file.getUrl(), (fileSize / 1024.0));
-                    } else {
-                        throw new DigestException("Downloaded file message digest does not match update center for " + url);
-                    }
+                    throw new DigestException("Downloaded file message digest does not match update center for " + url);
                 }
             } catch (IOException ioEx) {
                 if (shouldRetryForException(ioEx) && retriesRemaining.getAndDecrement() > 0) {

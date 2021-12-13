@@ -3,7 +3,7 @@
 This tools offers a facility to scan Jenkins plugins for a given API usage.
 It will automatically download all existing Jenkins plugins, and analyze them using the provided criteria.
 
-NOTE: it will **NOT** find usages in Jelly and Groovy files, and in WEB-INF/lib/*.jar.
+NOTE: it will **NOT** find usages in Jelly and Groovy files. Finding usage in `WEB-INF/lib/*.jar` is optional (`-p`).
 
 [![Build Status](https://ci.jenkins.io/job/Infra/job/deprecated-usage-in-plugins/job/master/badge/icon)](https://ci.jenkins.io/job/Infra/job/deprecated-usage-in-plugins/job/master/)
 
