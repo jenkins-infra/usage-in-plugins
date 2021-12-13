@@ -94,7 +94,6 @@ public class DeprecatedUsage {
                     analyze(is, aClassVisitor);
                 } catch (Exception e) {
                     System.err.println("Failed to fully analyze " + pluginFile + ".  " + fileName + " not scanned due to " + e.getMessage());
-//                    e.printStackTrace();
                 }
                 fileName = warReader.nextClass();
             }
