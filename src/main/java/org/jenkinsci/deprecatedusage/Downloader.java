@@ -33,16 +33,6 @@ public class Downloader {
         concurrentDownloadsPermit = new Semaphore(maxConcurrentDownloads);
     }
 
-    public Collection<JenkinsFile> useExistingFiles(Collection<JenkinsFile> files){
-        final Collection<JenkinsFile> synced = ConcurrentHashMap.newKeySet(files.size());
-        for (JenkinsFile file : files) {
-            if (file.isFileSynchronized()) {
-                synced.add(file);
-            }
-        }
-        return synced;
-    }
-    
     public Future<Collection<JenkinsFile>> synchronize(Collection<JenkinsFile> files) {
         final Collection<JenkinsFile> synced = ConcurrentHashMap.newKeySet(files.size());
         final CountDownLatch latch = new CountDownLatch(files.size());

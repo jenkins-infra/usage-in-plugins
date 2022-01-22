@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -14,13 +15,11 @@ import java.util.Set;
 import java.util.TreeSet;
 import org.apache.commons.io.IOUtils;
 
-import org.jenkinsci.deprecatedusage.search.SearchCriteria;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-//TODO rename to remove the Deprecated as it was generalized over time to look for any calls
 public class DeprecatedUsage {
     // python-wrapper has wrappers for all extension points and descriptors,
     // they are just wrappers and not real usage
@@ -28,54 +27,27 @@ public class DeprecatedUsage {
             Arrays.asList("python-wrapper.hpi"));
 
     private final Plugin plugin;
+    private final DeprecatedApi deprecatedApi;
     private final boolean includePluginLibraries;
-    private final SearchCriteria searchCriteria;
 
     private final Set<String> classes = new LinkedHashSet<>();
     private final Set<String> methods = new LinkedHashSet<>();
     private final Set<String> fields = new LinkedHashSet<>();
-
-    /**
-     * Provider = methods we look for
-     * Consumer = methods using a provider
-     * And in next level, the consumer becomes the provider
-     * 
-     * For a given provider method, returns the consumers methods that calls it inside their bodies
-     */
-    private final Map<String, Set<String>> providerToConsumers = new HashMap<>();
-
-    /**
-     * Provider = methods we look for
-     * Consumer = methods using a provider
-     * And in next level, the consumer becomes the provider
-     * 
-     * For a given consumer method, returns the provider methods it calls inside its body
-     */
-    private final Map<String, Set<String>> consumerToProviders = new HashMap<>();
-
     private final ClassVisitor indexerClassVisitor = new IndexerClassVisitor();
     private final ClassVisitor classVisitor = new CallersClassVisitor();
     private final Map<String, List<String>> superClassAndInterfacesByClass = new HashMap<>();
 
-    public DeprecatedUsage(String pluginName, String pluginVersion, SearchCriteria searchCriteria, boolean includePluginLibraries) {
+    public DeprecatedUsage(String pluginName, String pluginVersion, DeprecatedApi deprecatedApi, boolean includePluginLibraries) {
         super();
         this.plugin = new Plugin(pluginName, pluginVersion);
+        this.deprecatedApi = deprecatedApi;
         this.includePluginLibraries = includePluginLibraries;
-        this.searchCriteria = searchCriteria;
     }
 
     public void analyze(File pluginFile) throws IOException {
         if (IGNORED_PLUGINS.contains(pluginFile.getName())) {
             return;
         }
-
-        if (this.includePluginLibraries) {
-            long fileSize = pluginFile.length();
-            if (fileSize > 50 * 1024 * 1024) {
-                System.out.println(pluginFile.getName() + ": " + fileSize / 1024 / 1024 + " MB");
-            }
-        }
-
         analyzeWithClassVisitor(pluginFile, indexerClassVisitor);
         analyzeWithClassVisitor(pluginFile, classVisitor);
     }
@@ -93,7 +65,8 @@ public class DeprecatedUsage {
                     InputStream is = warReader.getInputStream();
                     analyze(is, aClassVisitor);
                 } catch (Exception e) {
-                    System.err.println("Failed to fully analyze " + pluginFile + ".  " + fileName + " not scanned due to " + e.getMessage());
+                    System.err.println("Failed to fully analyze " + pluginFile + ".  " + fileName + " not scanned due to -> ");
+                    e.printStackTrace();
                 }
                 fileName = warReader.nextClass();
             }
@@ -129,11 +102,11 @@ public class DeprecatedUsage {
                     }
                 }
                 String s = new String(buf, 0, strLength);
-                if (searchCriteria.isLookingForClass(s)) {
+                if (deprecatedApi.getClasses().contains(s)) {
                     classes.add(s);
                 } else if (s.length() > 2 && s.charAt(0) == 'L' && s.charAt(s.length() - 1) == ';') {
                     String name = s.substring(1, s.length() - 1);
-                    if (searchCriteria.isLookingForClass(name)) {
+                    if (deprecatedApi.getClasses().contains(name)) {
                         classes.add(name);
                     }
                 }
@@ -157,51 +130,32 @@ public class DeprecatedUsage {
         return new TreeSet<>(fields);
     }
 
-    public Map<String, Set<String>> getProviderToConsumers() {
-        return providerToConsumers;
-    }
-
-    public Map<String, Set<String>> getConsumerToProviders() {
-        return consumerToProviders;
-    }
-
-    public Set<String> getNewSignatures() {
-        return new HashSet<>(consumerToProviders.keySet());
-    }
-
     public boolean hasDeprecatedUsage() {
         return !classes.isEmpty() || !methods.isEmpty() || !fields.isEmpty();
     }
 
-    void methodCalled(String className, String name, String desc, String callerClassName, String callerName, String callerDesc) {
-        if (!shouldAnalyze(className)) {
-            return;
-        }
+    void methodCalled(String className, String name, String desc) {
 
-        String methodKey = DeprecatedApi.getMethodKey(className, name, desc);
-
-        boolean lookingForClass = searchCriteria.isLookingForClass(className);
-        boolean lookingForMethodKey = searchCriteria.isLookingForMethod(methodKey, className, name);
-        if (lookingForClass || lookingForMethodKey) {
-            if (lookingForClass) {
+            if (!shouldAnalyze(className)) {
+                return;
+            }
+            if (deprecatedApi.getClasses().contains(className)) {
                 classes.add(className);
+            } else {
+                final String method = DeprecatedApi.getMethodKey(className, name, desc);
+                if (deprecatedApi.getMethods().contains(method) ||
+                        (Options.get().additionalMethodsFile != null &&
+                                Options.getAdditionalMethodNames().getOrDefault(className, Collections.emptySet()).contains(name))) {
+                    methods.add(method);
+                }
+                final List<String> superClassAndInterfaces = superClassAndInterfacesByClass
+                        .get(className);
+                if (superClassAndInterfaces != null) {
+                    for (final String superClassOrInterface : superClassAndInterfaces) {
+                        methodCalled(superClassOrInterface, name, desc);
+                    }
+                }
             }
-            if (lookingForMethodKey) {
-                methods.add(methodKey);
-            }
-
-            String callerSignature = DeprecatedApi.getMethodKey(callerClassName, callerName, callerDesc);
-            
-            providerToConsumers.computeIfAbsent(methodKey, s -> new HashSet<>()).add(callerSignature);
-            consumerToProviders.computeIfAbsent(callerSignature, s -> new HashSet<>()).add(methodKey);
-        }
-
-        final List<String> superClassAndInterfaces = superClassAndInterfacesByClass.get(className);
-        if (superClassAndInterfaces != null) {
-            for (final String superClassOrInterface : superClassAndInterfaces) {
-                methodCalled(superClassOrInterface, name, desc, callerClassName, callerName, callerDesc);
-            }
-        }
     }
 
     /**
@@ -210,53 +164,75 @@ public class DeprecatedUsage {
      * @see Options
      */
     private boolean shouldAnalyze(String className)  {
+
         if (className.endsWith("DefaultTypeTransformation")) {
             // various DefaultTypeTransformation#box signatures seem false positive in plugins written in Groovy
             return false;
         }
 
-        return searchCriteria.shouldAnalyzeClass(className);
-    }
-
-    void fieldCalled(String className, String name, String desc, String callerClassName, String callerName, String callerDesc) {
-        if (!shouldAnalyze(className)) {
-            return;
+        // if an additionalClasses file is specified, and this matches, we ignore Options' includeJavaCoreClasses or onlyIncludeJenkinsClasses
+        // values, given the least surprise is most likely that if the user explicitly passed a file, s/he does want it to be analyzed
+        // even if coming from java.*, javax.*, or not from Jenkins core classes itself
+        Options options = Options.get();
+        if (options.additionalClassesFile != null &&
+                Options.getAdditionalClasses().stream().anyMatch(className::startsWith)) {
+            return true;
+        }
+        if (options.additionalMethodsFile != null &&
+                Options.getAdditionalMethodNames().keySet().stream().anyMatch(className::startsWith)) {
+            return true;
+        }
+        if (options.additionalFieldsFile != null &&
+                Options.getAdditionalFields().keySet().stream().anyMatch(className::startsWith)) {
+            return true;
         }
 
-        String fieldKey = DeprecatedApi.getFieldKey(className, name, desc);
-        
-        boolean lookingForClass = searchCriteria.isLookingForClass(className);
-        boolean lookingForFieldKey = searchCriteria.isLookingForField(fieldKey, className, name);
-        if (lookingForClass || lookingForFieldKey) {
-            if (lookingForClass) {
+        if (options.onlyIncludeSpecified) {
+            return false;
+        }
+
+        // Calls to java and javax are ignored by default if not explicitly requested
+        if(isJavaClass(className)) {
+            return options.includeJavaCoreClasses;
+        }
+
+        if(!className.contains("jenkins") && !className.contains("hudson") && !className.contains("org/kohsuke")) {
+            return options.onlyIncludeJenkinsClasses;
+        }
+
+        return true;
+    }
+
+    void fieldCalled(String className, String name, String desc) {
+        // Calls to java and javax are ignored first
+        if (!isJavaClass(className)) {
+            if (deprecatedApi.getClasses().contains(className)) {
                 classes.add(className);
-            }
-            if (lookingForFieldKey) {
-                fields.add(fieldKey);
-            }
-
-            String callerSignature = DeprecatedApi.getMethodKey(callerClassName, callerName, callerDesc);
-
-            // the first pass will be done with fieldKey, but then, they are going to regular recursive method search
-            providerToConsumers.computeIfAbsent(fieldKey, s -> new HashSet<>()).add(callerSignature);
-            consumerToProviders.computeIfAbsent(callerSignature, s -> new HashSet<>()).add(fieldKey);
-        }
-
-        final List<String> superClassAndInterfaces = superClassAndInterfacesByClass.get(className);
-        if (superClassAndInterfaces != null) {
-            for (final String superClassOrInterface : superClassAndInterfaces) {
-                fieldCalled(superClassOrInterface, name, desc, callerClassName, callerName, callerDesc);
+            } else {
+                final String field = DeprecatedApi.getFieldKey(className, name, desc);
+                if (deprecatedApi.getFields().contains(field) ||
+                        (Options.get().additionalFieldsFile != null &&
+                                Options.getAdditionalFields().getOrDefault(className, Collections.emptySet()).contains(name))) {
+                    fields.add(field);
+                }
+                final List<String> superClassAndInterfaces = superClassAndInterfacesByClass
+                        .get(className);
+                if (superClassAndInterfaces != null) {
+                    for (final String superClassOrInterface : superClassAndInterfaces) {
+                        fieldCalled(superClassOrInterface, name, desc);
+                    }
+                }
             }
         }
     }
 
-    public static boolean isJavaClass(String asmClassName) {
+    private static boolean isJavaClass(String asmClassName) {
         // if starts with java/ or javax/, then it's a class of core java
         return asmClassName.startsWith("java/") || asmClassName.startsWith("javax/");
     }
 
     /**
-     * Discover the class hierarchy (SuperClass + Interfaces)
+     * Implements ASM ClassVisitor.
      */
     private class IndexerClassVisitor extends ClassVisitor {
         IndexerClassVisitor() {
@@ -288,62 +264,47 @@ public class DeprecatedUsage {
     }
 
     /**
-     * ClassVisitor that delegates method visit to CallersMethodVisitor
+     * Implements ASM ClassVisitor.
      */
     private class CallersClassVisitor extends ClassVisitor {
-        //TODO check if ThreadLocal is really required
-        private String currentClassName = null;
-        
         CallersClassVisitor() {
             super(Opcodes.ASM9);
-        }
-
-        @Override 
-        public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-            super.visit(version, access, name, signature, superName, interfaces);
-            currentClassName = name;
         }
 
         @Override
         public MethodVisitor visitMethod(int access, String name, String desc, String signature,
                 String[] exceptions) {
             // asm javadoc says to return a new instance each time
-            return new CallersMethodVisitor(currentClassName, name, desc, signature);
+            return new CallersMethodVisitor();
         }
     }
 
     /**
-     * Visit every methods and fields
+     * Implements ASM MethodVisitor.
      */
     private class CallersMethodVisitor extends MethodVisitor {
-        String className;
-        String name;
-        String desc;
-        String signature;
-        
-        CallersMethodVisitor(String className, String name, String desc, String signature) {
+        CallersMethodVisitor() {
             super(Opcodes.ASM9);
-            this.className = className;
-            this.name = name;
-            this.desc = desc;
-            this.signature = signature;
         }
 
         @Deprecated
         @Override
         public void visitMethodInsn(int opcode, String owner, String name, String desc) {
-            methodCalled(owner, name, desc, this.className, this.name, this.desc);
+            // log("\t" + owner + " " + name + " " + desc);
+            methodCalled(owner, name, desc);
         }
 
         @Override
         public void visitMethodInsn(int opcode, String owner, String name, String desc,
                 boolean itf) {
-            methodCalled(owner, name, desc, this.className, this.name, this.desc);
+            // log("\t" + owner + " " + name + " " + desc);
+            methodCalled(owner, name, desc);
         }
 
         @Override
         public void visitFieldInsn(int opcode, String owner, String name, String desc) {
-            fieldCalled(owner, name, desc, this.className, this.name, this.desc);
+            // log("\t" + owner + " " + name + " " + desc);
+            fieldCalled(owner, name, desc);
         }
     }
 }

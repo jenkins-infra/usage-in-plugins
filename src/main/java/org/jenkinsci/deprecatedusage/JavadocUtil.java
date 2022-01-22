@@ -76,9 +76,6 @@ public class JavadocUtil {
         String markerPattern = "[LZBCIV\\[]";
         
         String marker = scanner.next(markerPattern);
-        if (marker == null) {
-            return "unknown";
-        }
         if (marker.equals("[")) {
             // array
             return scanParameterToHuman(scanner) + "[]";

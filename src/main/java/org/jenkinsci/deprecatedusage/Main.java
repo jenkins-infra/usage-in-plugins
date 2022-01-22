@@ -2,18 +2,6 @@ package org.jenkinsci.deprecatedusage;
 
 import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
-import org.jenkinsci.deprecatedusage.report.DeprecatedUnusedApiReport;
-import org.jenkinsci.deprecatedusage.report.DeprecatedUsageByApiReport;
-import org.jenkinsci.deprecatedusage.report.DeprecatedUsageByPluginReport;
-import org.jenkinsci.deprecatedusage.report.LevelReportStorage;
-import org.jenkinsci.deprecatedusage.report.RecursiveUsageByPluginByLevelReport;
-import org.jenkinsci.deprecatedusage.report.RecursiveUsageByPluginFlatReducedReport;
-import org.jenkinsci.deprecatedusage.report.RecursiveUsageByPluginFlatReport;
-import org.jenkinsci.deprecatedusage.report.RecursiveUsageByPluginOnlyMethodsReport;
-import org.jenkinsci.deprecatedusage.search.DeprecatedApiSearchCriteria;
-import org.jenkinsci.deprecatedusage.search.OptionsBasedSearchCriteria;
-import org.jenkinsci.deprecatedusage.search.RecursiveSearchCriteria;
-import org.jenkinsci.deprecatedusage.search.SearchCriteria;
 import org.json.JSONObject;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
@@ -25,13 +13,11 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.sql.Array;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -43,11 +29,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import java.util.zip.ZipException;
 
 public class Main {
@@ -57,6 +41,7 @@ public class Main {
     }
 
     public void doMain(String[] args) throws Exception {
+
         final Options options = Options.get();
         final CmdLineParser commandLineParser = new CmdLineParser(options);
         try {
@@ -78,8 +63,6 @@ public class Main {
             h.setLevel(Level.ALL);
             l.addHandler(h);
         }
-
-        options.buildCache();
 
         final ExecutorService executor = Executors.newWorkStealingPool();
         final Downloader downloader = new Downloader(executor, options.maxConcurrentDownloads);
@@ -111,101 +94,34 @@ public class Main {
 
             // wait for async code to finish submitting
             metadataLoaded.await(10, TimeUnit.SECONDS);
-
-            Collection<JenkinsFile> downloadedCores;
-            if (options.skipDownloads) {
-                System.out.println("Checking core files");
-                downloadedCores = downloader.useExistingFiles(cores);
-            } else {
-                System.out.println("Downloading core files");
-                downloadedCores = downloader.synchronize(cores).get();
-            }
-
-            if (!options.ignoreDeprecated) {
-                for (JenkinsFile core : downloadedCores) {
-                    try {
-                        System.out.println("Analyzing deprecated APIs in " + core);
-                        deprecatedApi.analyze(core.getFile());
-                        System.out.println("Finished deprecated API analysis in " + core);
-                    } catch (IOException e) {
-                        System.out.println("Error analyzing deprecated APIs in " + core);
-                        System.out.println(e.toString());
-                    }
+            System.out.println("Downloading core files");
+            for (JenkinsFile core : downloader.synchronize(cores).get()) {
+                try {
+                    System.out.println("Analyzing deprecated APIs in " + core);
+                    deprecatedApi.analyze(core.getFile());
+                    System.out.println("Finished deprecated API analysis in " + core);
+                } catch (IOException e) {
+                    System.out.println("Error analyzing deprecated APIs in " + core);
+                    System.out.println(e.toString());
                 }
             }
 
-            if (options.limitPluginsFile != null) {
-                int previousSize = plugins.size();
-                Set<String> limitedScopeOfPlugins = Options.getLimitedScopeOfPlugins();
-                plugins.removeIf(jenkinsFile -> !limitedScopeOfPlugins.contains(jenkinsFile.getName()));
-                int afterSize = plugins.size();
+            System.out.println("Downloading plugin files (out of " + plugins.size() + " total)");
 
-                System.out.println("By using a limited scope of plugins, the list of plugins went from " + previousSize + " to " + afterSize);
-            }
-
-            Collection<JenkinsFile> downloadedPlugins;
-            if (options.skipDownloads) {
-                System.out.println("Checking plugin files (out of " + plugins.size() + " total)");
-                downloadedPlugins = downloader.useExistingFiles(plugins);
-            } else {
-                System.out.println("Downloading plugin files (out of " + plugins.size() + " total)");
-                downloadedPlugins = downloader.synchronize(plugins).get();
-            }
+            Collection<JenkinsFile> downloadedPlugins = downloader.synchronize(plugins).get();
 
             System.out.println("Analyzing usage in plugins");
-            SearchCriteria deprecatedAndOptionCriteria = new OptionsBasedSearchCriteria().combineWith(new DeprecatedApiSearchCriteria(deprecatedApi));
-            
-            List<DeprecatedUsage> deprecatedUsages;
-            if (options.includeCore) {
-                List<DeprecatedUsage> fromCores = analyzeDeprecatedUsage(downloadedCores, deprecatedAndOptionCriteria, executor, options.includeCoreLibraries);
-                List<DeprecatedUsage> fromPlugins = analyzeDeprecatedUsage(downloadedPlugins, deprecatedAndOptionCriteria, executor, options.includePluginLibraries);
+            final List<DeprecatedUsage> deprecatedUsages = analyzeDeprecatedUsage(downloadedPlugins, deprecatedApi, executor, options.includePluginLibraries);
 
-                List<DeprecatedUsage> all = new ArrayList<>(fromPlugins);
-                all.addAll(fromCores);
-                deprecatedUsages = all;
-            } else {
-                deprecatedUsages = analyzeDeprecatedUsage(downloadedPlugins, deprecatedAndOptionCriteria, executor, options.includePluginLibraries);
-            }
-            
-            System.out.println("Initial analysis done");
-            List<Report> reports = new ArrayList<>();
-            reports.add(new DeprecatedUsageByPluginReport(deprecatedApi, deprecatedUsages, new File("output"), "usage-by-plugin"));
-            reports.add(new DeprecatedUnusedApiReport(deprecatedApi, deprecatedUsages, new File("output"), "deprecated-and-unused"));
-            reports.add(new DeprecatedUsageByApiReport(deprecatedApi, deprecatedUsages, new File("output"), "usage-by-api"));
+            Report[] reports = new Report[]{
+                    new DeprecatedUsageByPluginReport(deprecatedApi, deprecatedUsages, new File("output"), "usage-by-plugin"),
+                    new DeprecatedUnusedApiReport(deprecatedApi, deprecatedUsages, new File("output"), "deprecated-and-unused"),
+                    new DeprecatedUsageByApiReport(deprecatedApi, deprecatedUsages, new File("output"), "usage-by-api")
+            };
 
             for (Report report : reports) {
                 report.generateJsonReport();
                 report.generateHtmlReport();
-            }
-
-            if (options.recursive) {
-                System.out.println("Entering recursive mode");
-                reports = new ArrayList<>();
-                LevelReportStorage levelReportStorage = new LevelReportStorage();
-
-                loopForRecursiveSearch(deprecatedUsages, levelReportStorage, newMethodsFound -> {
-                    RecursiveSearchCriteria recursiveSearchCriteria = new RecursiveSearchCriteria(newMethodsFound);
-                    if (options.includeCore) {
-                        List<DeprecatedUsage> fromCores = analyzeDeprecatedUsage(downloadedCores, recursiveSearchCriteria, executor, options.includeCoreLibraries);
-                        List<DeprecatedUsage> fromPlugins = analyzeDeprecatedUsage(downloadedPlugins, recursiveSearchCriteria, executor, options.includePluginLibraries);
-
-                        List<DeprecatedUsage> all = new ArrayList<>(fromPlugins);
-                        all.addAll(fromCores);
-                        return all;
-                    } else {
-                        return analyzeDeprecatedUsage(downloadedPlugins, recursiveSearchCriteria, executor, options.includePluginLibraries);
-                    }
-                });
-
-                reports.add(new RecursiveUsageByPluginByLevelReport(levelReportStorage, new File("output"), "recursive-usage-plugin-level"));
-                reports.add(new RecursiveUsageByPluginFlatReport(levelReportStorage, new File("output"), "recursive-usage-flat"));
-                reports.add(new RecursiveUsageByPluginOnlyMethodsReport(levelReportStorage, new File("output"), "recursive-usage-only-methods"));
-                reports.add(new RecursiveUsageByPluginFlatReducedReport(levelReportStorage, new File("output"), "recursive-usage-flat-reduced"));
-
-                for (Report report : reports) {
-                    report.generateJsonReport();
-                    report.generateHtmlReport();
-                }
             }
 
             System.out.println("duration : " + (System.currentTimeMillis() - start) + " ms at "
@@ -216,74 +132,25 @@ public class Main {
     }
 
     /**
-     * Not a recursion itself to prevent memory issue
-     */
-    private void loopForRecursiveSearch(List<DeprecatedUsage> previousUsages, LevelReportStorage levelReportStorage, Function<Set<String>, List<DeprecatedUsage>> func) {
-        int level = 1;
-
-        List<DeprecatedUsage> currUsages = previousUsages;
-        Set<String> allMethodKeys = new HashSet<>();
-
-        boolean running = true;
-        while (running) {
-            System.out.println();
-            System.out.print("Level " + level + " done");
-            Set<String> newMethodsFound = computeNewMethodKeys(currUsages, allMethodKeys);
-
-            if (newMethodsFound.size() > 0) {
-                System.out.print(", new methods found = " + newMethodsFound.size());
-                levelReportStorage.addLevel(level, currUsages);
-
-                // a new method that is never used as a provider will not impact globalXxxToYyy
-                System.out.print(", total consumers found = " + levelReportStorage.globalConsumerToProviders.size());
-                System.out.println(", total providers found = " + levelReportStorage.globalProviderToConsumers.size());
-                System.out.println();
-
-                if (level < Options.get().recursiveMaxDepth) {
-                    level++;
-
-                    currUsages = func.apply(newMethodsFound);
-                } else {
-                    System.out.println("Max depth (" + Options.get().recursiveMaxDepth + ") reached.");
-                    running = false;
-                }
-            } else {
-                System.out.println(", without new methods");
-                running = false;
-            }
-        }
-    }
-
-    private Set<String> computeNewMethodKeys(List<DeprecatedUsage> previousUsages, Set<String> allMethodKeys) {
-        Set<String> methodsFound = new HashSet<>();
-        for (DeprecatedUsage recursiveUsage : previousUsages) {
-            methodsFound.addAll(recursiveUsage.getNewSignatures());
-        }
-
-        Set<String> newMethodsFound = methodsFound.stream().filter(s -> !allMethodKeys.contains(s)).collect(Collectors.toSet());
-        allMethodKeys.addAll(newMethodsFound);
-        
-        return newMethodsFound;
-    }
-
-    /**
      * Adds hardcoded classes to analyze for usage. This is mostly designed for finding classes planned for deprecation,
      * but can be also used to find any class usage.
      */
     private static void addClassesToAnalyze(DeprecatedApi deprecatedApi) {
         if (Options.get().additionalClassesFile != null) {
-            deprecatedApi.addClasses(Options.getAdditionalClasses());
+            List<String> additionalClasses = Options.getAdditionalClasses();
+            deprecatedApi.addClasses(additionalClasses);
         } else {
             System.out.println("No 'additionalClassesFile' option, only already deprecated class will be searched for");
         }
     }
 
-    private static List<DeprecatedUsage> analyzeDeprecatedUsage(Collection<JenkinsFile> plugins, SearchCriteria searchCriteria,
-                                                                Executor executor, boolean scanPluginLibs) {
+    private static List<DeprecatedUsage> analyzeDeprecatedUsage(Collection<JenkinsFile> plugins, DeprecatedApi deprecatedApi,
+                                                                Executor executor, boolean scanPluginLibs)
+            throws InterruptedException, ExecutionException {
         List<CompletableFuture<DeprecatedUsage>> futures = new ArrayList<>();
         for (JenkinsFile plugin : plugins) {
             futures.add(CompletableFuture.supplyAsync(() -> {
-                DeprecatedUsage deprecatedUsage = new DeprecatedUsage(plugin.getName(), plugin.getVersion(), searchCriteria, scanPluginLibs);
+                DeprecatedUsage deprecatedUsage = new DeprecatedUsage(plugin.getName(), plugin.getVersion(), deprecatedApi, scanPluginLibs);
                 try {
                     deprecatedUsage.analyze(plugin.getFile());
                 } catch (final EOFException | ZipException | FileNotFoundException e) {
@@ -304,12 +171,7 @@ public class Main {
         final List<DeprecatedUsage> deprecatedUsages = new ArrayList<>();
         int i = 0;
         for (final Future<DeprecatedUsage> future : futures) {
-            final DeprecatedUsage deprecatedUsage;
-            try {
-                deprecatedUsage = future.get();
-            } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException(e);
-            }
+            final DeprecatedUsage deprecatedUsage = future.get();
             deprecatedUsages.add(deprecatedUsage);
             i++;
             if (i % 10 == 0) {

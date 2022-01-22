@@ -8,9 +8,6 @@ import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-/**
- * Scan HPI / JPI / WAR files
- */
 public class WarReader implements Closeable {
     private final File warFile;
     private final ZipFile zipFile;
@@ -41,9 +38,8 @@ public class WarReader implements Closeable {
             entry = entries.nextElement();
             final String fileName = entry.getName();
             if (fileName.startsWith("WEB-INF/lib/") && fileName.endsWith(".jar")) {
-                final boolean shouldScanJar = !scanOnlyJarOfPlugin
-                        || warFile.getName().equals(fileName.replace("WEB-INF/lib/", "").replace(".jar", ".hpi"))
-                        || fileName.contains("jenkins-core");
+                final boolean shouldScanJar = !scanOnlyJarOfPlugin || warFile.getName()
+                        .equals(fileName.replace("WEB-INF/lib/", "").replace(".jar", ".hpi"));
                 if (shouldScanJar) {
                     jarReader = new JarReader(zipFile.getInputStream(entry));
                     return this.nextClass();

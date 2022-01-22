@@ -10,8 +10,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
@@ -37,14 +37,6 @@ public class DeprecatedApi {
 
     public static String getMethodKey(String className, String name, String desc) {
         return className + SEPARATOR + name + desc;
-    }
-    
-    public static String extractClassNameFromKey(String methodOrFieldKey) {
-        int sepIndex = methodOrFieldKey.indexOf(SEPARATOR);
-        if (sepIndex == -1) {
-            throw new IllegalArgumentException("Missing separator in that key");
-        }
-        return methodOrFieldKey.substring(0, sepIndex); 
     }
 
     public static String getFieldKey(String className, String name, String desc) {
@@ -75,7 +67,7 @@ public class DeprecatedApi {
     }
 
     public Set<String> getClasses() {
-        return classes;
+        return  classes;
     }
 
     public Set<String> getMethods() {
@@ -86,12 +78,12 @@ public class DeprecatedApi {
         return fields;
     }
 
-    public void addClasses(Collection<String> additionalClasses) {
+    public void addClasses(List<String> additionalClasses) {
         classes.addAll(additionalClasses);
     }
 
     /**
-     * Record the methods that are deprecated and public/protected.
+     * Implements ASM ClassVisitor.
      */
     private class CalledClassVisitor extends ClassVisitor {
         private static final int OPCODE_PUBLIC = Opcodes.ACC_PUBLIC | Opcodes.ACC_PROTECTED;
