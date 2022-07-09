@@ -92,7 +92,7 @@ public class DeprecatedApi {
         private String currentClass;
 
         CalledClassVisitor() {
-            super(Opcodes.ASM6);
+            super(Opcodes.ASM9);
         }
 
         private boolean isPublic(int asmAccess) {
