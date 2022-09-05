@@ -35,8 +35,8 @@
 		<dependency>
 			<groupId>org.json</groupId>
 			<artifactId>json</artifactId>
-			<version>20140107</version>
-			<!-- 20140107 is the last json.org release still compatible with java 1.7 -->
+			<version>20220320</version>
+			<!-- 20220320 is the last json.org release still compatible with java 1.7 -->
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
