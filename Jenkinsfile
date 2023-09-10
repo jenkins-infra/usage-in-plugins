@@ -3,8 +3,8 @@ pipeline {
       label 'maven'
    }
 
-   triggers {
-      cron('H H * * *')
+   if (env.BRANCH_IS_PRIMARY) {
+      properties([pipelineTriggers([cron('H H * * *')])])
    }
 
    options {
