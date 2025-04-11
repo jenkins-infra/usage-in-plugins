@@ -5,6 +5,8 @@ pipeline {
 
    if (env.BRANCH_IS_PRIMARY) {
       properties([pipelineTriggers([cron('H H * * *')])])
+   else {
+      properties([pipelineTriggers([cron('')])])
    }
 
    options {
