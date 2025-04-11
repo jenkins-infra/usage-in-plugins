@@ -3,8 +3,10 @@ pipeline {
       label 'maven-21'
    }
 
-   triggers {
-      cron('H H * * *')
+   if (env.BRANCH_IS_PRIMARY) {
+      properties([pipelineTriggers([cron('H H * * *')])])
+   else {
+      properties([pipelineTriggers([cron('')])])
    }
 
    options {
