@@ -1,7 +1,6 @@
 pipeline {
    agent {
-      // JDK8 - https://github.com/jenkins-infra/usage-in-plugins/blob/6e73d80e0dc5384fed2f627d0b2d56e11ba46f1c/pom.xml#L97-L98
-      label 'maven-8'
+      label 'maven-21'
    }
 
    triggers {
