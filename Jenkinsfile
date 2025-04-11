@@ -1,12 +1,12 @@
+final String cron_string = env.BRANCH_IS_PRIMARY ? 'H H * * *' : ''
+
 pipeline {
    agent {
       label 'maven-21'
    }
 
-   if (env.BRANCH_IS_PRIMARY) {
-      properties([pipelineTriggers([cron('H H * * *')])])
-   else {
-      properties([pipelineTriggers([cron('')])])
+   triggers {
+      cron(cron_string)
    }
 
    options {
