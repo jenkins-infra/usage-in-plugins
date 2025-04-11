@@ -1,6 +1,6 @@
 pipeline {
    agent {
-      label 'maven'
+      label 'maven-21'
    }
 
    if (env.BRANCH_IS_PRIMARY) {
