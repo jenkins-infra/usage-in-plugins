@@ -26,23 +26,23 @@ package org.jenkinsci.deprecatedusage.search;
 import org.jenkinsci.deprecatedusage.DeprecatedApi;
 
 public class DeprecatedApiSearchCriteria implements SearchCriteria {
-    private DeprecatedApi deprecatedApi;
+    private final DeprecatedApi deprecatedApi;
 
     public DeprecatedApiSearchCriteria(DeprecatedApi deprecatedApi) {
         this.deprecatedApi = deprecatedApi;
     }
 
-    @Override 
+    @Override
     public boolean isLookingForClass(String className) {
         return deprecatedApi.getClasses().contains(className);
     }
 
-    @Override 
+    @Override
     public boolean isLookingForMethod(String methodKey, String className, String methodName) {
         return deprecatedApi.getMethods().contains(methodKey);
     }
 
-    @Override 
+    @Override
     public boolean isLookingForField(String fieldKey, String className, String fieldName) {
         return deprecatedApi.getFields().contains(fieldKey);
     }

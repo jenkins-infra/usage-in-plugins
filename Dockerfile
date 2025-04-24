@@ -1,5 +1,4 @@
-# used JDK11 because on jdk-8 I get SUREFIRE-1588. Debian Docker images are a bit dead to me :(
-FROM maven:3.6.0-jdk-11
+FROM maven:eclipse-temurin
 LABEL maintainer="Baptiste Mathus <batmat@batmat.net>"
 
 RUN mkdir /project

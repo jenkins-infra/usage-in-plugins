@@ -60,7 +60,7 @@ public class JavadocUtil {
         String arguments = classMethodAndArguments.substring(classMethodAndArguments.indexOf("(") + 1, classMethodAndArguments.indexOf(")"));
 
         List<String> processedArgs = new ArrayList<>();
-        if (arguments.length() > 0) {
+        if (!arguments.isEmpty()) {
             Scanner scanner = new Scanner(arguments);
             String markerPattern = "[LZBCIV\\[]";
             while (scanner.hasNext(markerPattern)) {
@@ -74,35 +74,33 @@ public class JavadocUtil {
 
     private static String scanParameterToHuman(Scanner scanner) {
         String markerPattern = "[LZBCIV\\[]";
-        
+
         String marker = scanner.next(markerPattern);
         if (marker == null) {
             return "unknown";
         }
-        if (marker.equals("[")) {
-            // array
-            return scanParameterToHuman(scanner) + "[]";
-        }
-
-        if (marker.equals("L")) {
-            String className = scanner.next("[^;]+;");
-            return className.substring(0, className.length() - 1).replace("$", ".").replace("/", ".");
-        }
-
-        if (marker.equals("Z")) {
-            return "boolean";
-        }
-
-        if (marker.equals("I")) {
-            return "int";
-        }
-
-        if (marker.equals("B")) {
-            return "byte";
-        }
-
-        if (marker.equals("C")) {
-            return "char";
+        switch (marker) {
+            case "[" -> {
+                // array
+                return scanParameterToHuman(scanner) + "[]";
+                // array
+            }
+            case "L" -> {
+                String className = scanner.next("[^;]+;");
+                return className.substring(0, className.length() - 1).replace("$", ".").replace("/", ".");
+            }
+            case "Z" -> {
+                return "boolean";
+            }
+            case "I" -> {
+                return "int";
+            }
+            case "B" -> {
+                return "byte";
+            }
+            case "C" -> {
+                return "char";
+            }
         }
 
         return marker;

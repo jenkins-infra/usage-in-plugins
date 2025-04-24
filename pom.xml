@@ -7,7 +7,7 @@
 	<version>0.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<name>Deprecated usage in plugins</name>
-	<description>Finds and reports usage of deprecated Jenkins api in plugins</description>
+	<description>Finds and reports usage of deprecated Jenkins API in plugins</description>
 
 	<licenses>
 		<license>

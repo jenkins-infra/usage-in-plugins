@@ -61,7 +61,7 @@ public interface SearchCriteria {
 }
 
 class CombinedSearchCriteria implements SearchCriteria {
-    List<SearchCriteria> searchCriteriaList;
+    final List<SearchCriteria> searchCriteriaList;
 
     public CombinedSearchCriteria(List<SearchCriteria> searchCriteriaList) {
         this.searchCriteriaList = searchCriteriaList;

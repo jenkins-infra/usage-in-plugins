@@ -9,9 +9,9 @@ import org.objectweb.asm.Opcodes;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
@@ -25,7 +25,7 @@ public class DeprecatedApi {
     // Cloud cloud = iter.next(); }
     // so deprecation of Hudson$CloudList is ignored
     public static final Set<String> IGNORED_DEPRECATED_CLASSES = new HashSet<>(
-            Arrays.asList("hudson/model/Hudson$CloudList"));
+            List.of("hudson/model/Hudson$CloudList"));
 
     private static final char SEPARATOR = '#';
 
@@ -38,13 +38,13 @@ public class DeprecatedApi {
     public static String getMethodKey(String className, String name, String desc) {
         return className + SEPARATOR + name + desc;
     }
-    
+
     public static String extractClassNameFromKey(String methodOrFieldKey) {
         int sepIndex = methodOrFieldKey.indexOf(SEPARATOR);
         if (sepIndex == -1) {
             throw new IllegalArgumentException("Missing separator in that key");
         }
-        return methodOrFieldKey.substring(0, sepIndex); 
+        return methodOrFieldKey.substring(0, sepIndex);
     }
 
     public static String getFieldKey(String className, String name, String desc) {

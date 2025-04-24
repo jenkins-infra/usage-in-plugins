@@ -7,7 +7,7 @@ mvn clean compile exec:java -Dexec.args="args go here"
 
 == Dockerfile
 
-A Dockerfile is provided for ease of running without necessary environment (JDK, Maven, etc.)
+A Dockerfile is provided for ease of running without the necessary environment (JDK, Maven, etc.)
 
 Simply do:
 
@@ -54,7 +54,7 @@ Writing output/usage-by-api.html
 === Finding Usage of Classes, Methods and Fields
 
 The command line flag `-M filename.txt` or `--additionalMethods filename.txt` allows you to search for specific methods.
-Use the additional flag `-i` or `--onlyIncludeSpecified` to only show usage of specified classes, methods, and fields.
+Use the additional flag `-i` or `--onlyIncludeSpecified` to only show usage of specified classes, methods and fields.
 For example, to find usage of `hudson.util.Secret.toString`, include the following line in the specified file:
 
 [source]
@@ -95,7 +95,7 @@ hudson.model.Hudson
 By using just a package name instead of the fully qualified class name in "Class", "Method" or "Field" options, this searches for classes that start with the same specified package.
 For example, the following snippet would search for usage of methods or fields named `toString` in any classes inside the `hudson.util` package or its descendants.
 
-By default, the package name is check for exactness, but you can customize it by adding `*` at the beginning, the end or both,
+By default, the package name is checked for exactness, but you can customize it by adding `*` at the beginning, the end or both,
 to have a `startsWith`, `endsWith` or `contains` behavior respectively.
 
 [source]
@@ -106,8 +106,8 @@ hudson.util.*#toString
 Note the trailing `.*` before the `#` separator which makes the search more specific to `hudson.util` rather than also including the hypothetical package `hudson.utils` or `hudson.utility`.
 
 ==== Limit scope of plugins
-By default all the plugins included in the update-center JSON will be analysed.
-You can use the arguments `-l filename.txt` or `--limitPlugins filename.txt` to limit which plugins you can want to analyse.
+By default all the plugins included in the update-center JSON will be analyzed.
+You can use the arguments `-l filename.txt` or `--limitPlugins filename.txt` to limit which plugins you can want to analyze.
 The file must contain the artifact ID of the plugins, one per line.
 
 ==== Additional information
@@ -140,9 +140,9 @@ The reports containing "recursive" in their name will contain information only i
 When you search for something, the tool will look at the plugins, not including Jenkins Core.
 With `--includeCore`, you can also scan the Core code for the desired pattern.
 This can be extended to also look for Core libraries, like for plugins, with `--includeCoreLibs`.
-As the tool is moving to a more broader search tool capacities compared to the original "deprecation search", there is an option to ignore the deprecated calls, by passing `--onlyIncludeSpecified`.
+As the tool is moving to a broader search tool capacities compared to the original "deprecation search", there is an option to ignore the deprecated calls, by passing `--onlyIncludeSpecified`.
 
 === Development utilities
 
-The default behavior is to download the configure Update Center metadata and then compared the local cache (using checksum) in order to determine which cores/plugins need to be downloaded.
+The default behavior is to download the configured Update Center metadata and then compare the local cache (using checksum) to determine which cores/plugins need to be downloaded.
 If you want to avoid downloading the latest updates but just using what you have on disk (esp. useful during debugging session), you can use the argument `--skipDownloads`.
