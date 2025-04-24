@@ -1,6 +1,5 @@
 package org.jenkinsci.deprecatedusage;
 
-import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
 import org.jenkinsci.deprecatedusage.report.DeprecatedUnusedApiReport;
 import org.jenkinsci.deprecatedusage.report.DeprecatedUsageByApiReport;
@@ -23,9 +22,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.URL;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.sql.Array;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -92,11 +90,11 @@ public class Main {
             Set<JenkinsFile> cores = new ConcurrentSkipListSet<>(Comparator.comparing(JenkinsFile::getFile));
             Set<JenkinsFile> plugins = new ConcurrentSkipListSet<>(Comparator.comparing(JenkinsFile::getFile));
             for (String updateCenterURL : updateCenterURLs) {
-                URL url = new URL(updateCenterURL);
+                URI uri = new URI(updateCenterURL);
                 executor.execute(() -> {
                     System.out.println("Using update center URL: " + updateCenterURL);
                     try {
-                        String json = IOUtils.toString(url, StandardCharsets.UTF_8).replace("updateCenter.post(", "");
+                        String json = IOUtils.toString(uri, StandardCharsets.UTF_8).replace("updateCenter.post(", "");
                         UpdateCenter updateCenter = new UpdateCenter(new JSONObject(json));
                         if (updateCenter.getCore() != null) {
                             cores.add(updateCenter.getCore());
@@ -129,7 +127,7 @@ public class Main {
                         System.out.println("Finished deprecated API analysis in " + core);
                     } catch (IOException e) {
                         System.out.println("Error analyzing deprecated APIs in " + core);
-                        System.out.println(e.toString());
+                        System.out.println(e);
                     }
                 }
             }
@@ -154,7 +152,7 @@ public class Main {
 
             System.out.println("Analyzing usage in plugins");
             SearchCriteria deprecatedAndOptionCriteria = new OptionsBasedSearchCriteria().combineWith(new DeprecatedApiSearchCriteria(deprecatedApi));
-            
+
             List<DeprecatedUsage> deprecatedUsages;
             if (options.includeCore) {
                 List<DeprecatedUsage> fromCores = analyzeDeprecatedUsage(downloadedCores, deprecatedAndOptionCriteria, executor, options.includeCoreLibraries);
@@ -166,7 +164,7 @@ public class Main {
             } else {
                 deprecatedUsages = analyzeDeprecatedUsage(downloadedPlugins, deprecatedAndOptionCriteria, executor, options.includePluginLibraries);
             }
-            
+
             System.out.println("Initial analysis done");
             List<Report> reports = new ArrayList<>();
             reports.add(new DeprecatedUsageByPluginReport(deprecatedApi, deprecatedUsages, new File("output"), "usage-by-plugin"));
@@ -230,7 +228,7 @@ public class Main {
             System.out.print("Level " + level + " done");
             Set<String> newMethodsFound = computeNewMethodKeys(currUsages, allMethodKeys);
 
-            if (newMethodsFound.size() > 0) {
+            if (!newMethodsFound.isEmpty()) {
                 System.out.print(", new methods found = " + newMethodsFound.size());
                 levelReportStorage.addLevel(level, currUsages);
 
@@ -262,7 +260,7 @@ public class Main {
 
         Set<String> newMethodsFound = methodsFound.stream().filter(s -> !allMethodKeys.contains(s)).collect(Collectors.toSet());
         allMethodKeys.addAll(newMethodsFound);
-        
+
         return newMethodsFound;
     }
 
@@ -285,14 +283,14 @@ public class Main {
                 try {
                     deprecatedUsage.analyze(plugin.getFile());
                 } catch (final EOFException | ZipException | FileNotFoundException e) {
-                    System.out.println("deleting " + plugin + " and skipping, because " + e.toString());
+                    System.out.println("deleting " + plugin + " and skipping, because " + e);
                     try {
                         plugin.deleteFile();
                     } catch (IOException ioException) {
                         ioException.printStackTrace();
                     }
                 } catch (final Exception e) {
-                    System.out.println(e.toString() + " on " + plugin.getFile().getName());
+                    System.out.println(e + " on " + plugin.getFile().getName());
                     e.printStackTrace();
                 }
                 return deprecatedUsage;

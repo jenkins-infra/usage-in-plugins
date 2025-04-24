@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class RecursiveUsageByPluginByLevelReport extends Report {
-    private LevelReportStorage levelReportStorage;
+    private final LevelReportStorage levelReportStorage;
 
     public RecursiveUsageByPluginByLevelReport(LevelReportStorage levelReportStorage, File outputDir, String reportName) {
         super(null, null, outputDir, reportName);
@@ -38,7 +38,7 @@ public class RecursiveUsageByPluginByLevelReport extends Report {
             Map<Integer, Set<String>> minLevelToMethods = new HashMap<>();
             pluginMethods.forEach(method -> {
                 Set<Integer> levels = levelReportStorage.methodToLevels.get(method);
-                Integer minLevel = levels.stream().min(Integer::compareTo).get();
+                Integer minLevel = levels.stream().min(Integer::compareTo).orElseThrow();
                 minLevelToMethods.computeIfAbsent(minLevel, s -> new HashSet<>()).add(method);
             });
 
@@ -49,7 +49,7 @@ public class RecursiveUsageByPluginByLevelReport extends Report {
 
             levels.forEach(level -> {
                 JSONObject methodContent = JsonHelper.createOrderedJSONObject();
-                
+
                 List<String> methodsAtCurrLevel = new ArrayList<>(minLevelToMethods.get(level));
                 methodsAtCurrLevel.sort(String::compareToIgnoreCase);
 
@@ -64,7 +64,7 @@ public class RecursiveUsageByPluginByLevelReport extends Report {
 
             map.put(pluginName, pluginContent);
         });
-        
+
         writer.append(map.toString(2));
     }
 }

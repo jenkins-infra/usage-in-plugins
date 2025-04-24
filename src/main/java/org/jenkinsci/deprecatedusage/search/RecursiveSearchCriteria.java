@@ -29,8 +29,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class RecursiveSearchCriteria implements SearchCriteria {
-    private Set<String> methodKeys;
-    private Set<String> relatedClasses;
+    private final Set<String> methodKeys;
+    private final Set<String> relatedClasses;
 
     public RecursiveSearchCriteria(Set<String> methodKeys) {
         this.methodKeys = methodKeys;

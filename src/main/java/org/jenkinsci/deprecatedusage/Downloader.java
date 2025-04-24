@@ -2,6 +2,7 @@ package org.jenkinsci.deprecatedusage;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -10,6 +11,8 @@ import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.net.HttpURLConnection;
 import java.net.SocketException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
@@ -33,7 +36,7 @@ public class Downloader {
         concurrentDownloadsPermit = new Semaphore(maxConcurrentDownloads);
     }
 
-    public Collection<JenkinsFile> useExistingFiles(Collection<JenkinsFile> files){
+    public Collection<JenkinsFile> useExistingFiles(Collection<JenkinsFile> files) {
         final Collection<JenkinsFile> synced = ConcurrentHashMap.newKeySet(files.size());
         for (JenkinsFile file : files) {
             if (file.isFileSynchronized()) {
@@ -42,7 +45,7 @@ public class Downloader {
         }
         return synced;
     }
-    
+
     public Future<Collection<JenkinsFile>> synchronize(Collection<JenkinsFile> files) {
         final Collection<JenkinsFile> synced = ConcurrentHashMap.newKeySet(files.size());
         final CountDownLatch latch = new CountDownLatch(files.size());
@@ -69,7 +72,7 @@ public class Downloader {
                         pw.println(failure.getMessage());
                         failure.printStackTrace(pw);
                         pw.flush();
-                        System.err.println(sw.toString());
+                        System.err.println(sw);
                     } else {
                         synced.add(file);
                     }
@@ -106,7 +109,7 @@ public class Downloader {
                     concurrentDownloadsPermit.acquire();
                     doRun();
                     result.complete(null);
-                } catch (IOException | DigestException e) {
+                } catch (IOException | DigestException | URISyntaxException e) {
                     result.completeExceptionally(e);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -117,8 +120,8 @@ public class Downloader {
             });
         }
 
-        private void doRun() throws IOException, DigestException {
-            URL url = new URL(file.getUrl());
+        private void doRun() throws IOException, DigestException, URISyntaxException {
+            URL url = new URI(file.getUrl()).toURL();
             try {
                 URLConnection con = url.openConnection();
                 if (url.getProtocol().equalsIgnoreCase("https") || url.getProtocol().equalsIgnoreCase("http")) {
@@ -145,7 +148,7 @@ public class Downloader {
             } catch (IOException ioEx) {
                 if (shouldRetryForException(ioEx) && retriesRemaining.getAndDecrement() > 0) {
                     try {
-                        System.out.printf("Failed to download %s due to %s, will retry in 750ms%n", StringUtils.isEmpty(ioEx.getMessage()) ? ioEx.getClass().getName() : ioEx.getMessage() , file.getUrl());
+                        System.out.printf("Failed to download %s due to %s, will retry in 750ms%n", StringUtils.isEmpty(ioEx.getMessage()) ? ioEx.getClass().getName() : ioEx.getMessage(), file.getUrl());
                         Thread.sleep(7500L);
                     } catch (InterruptedException ex) {
                         IOException toThrow = new IOException("InterruptedException in sleep backoff", ex);
@@ -166,10 +169,7 @@ public class Downloader {
             if ("Premature EOF".equals(ioEx.getMessage())) {
                 return true;
             }
-            if ("Flaky Update Center returned HTTP 502".equals(ioEx.getMessage())) {
-                return true;
-            }
-            return false;
+            return "Flaky Update Center returned HTTP 502".equals(ioEx.getMessage());
         }
     }
 }

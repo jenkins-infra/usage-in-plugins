@@ -34,10 +34,10 @@ public class DeprecatedUsageByPluginReport extends Report {
             if (!usage.hasDeprecatedUsage()) {
                 continue;
             }
-            writer.append("<div class='plugin'><h2 id='").append(usage.getPlugin().artifactId).append("'><a href='")
+            writer.append("<div class='plugin'><h2 id='").append(usage.getPlugin().artifactId()).append("'><a href='")
                     .append(usage.getPlugin().getUrl()).append("'>").append(usage.getPlugin().toString()).append("</a></h2>");
 
-            if (usage.getClasses().size() > 0) {
+            if (!usage.getClasses().isEmpty()) {
                 writer.append("<h3>Classes</h3><ul>");
                 for (String clazz : usage.getClasses()) {
                     writer.append("<li>").append(JavadocUtil.signatureToJenkinsdocLink(clazz)).append("</li>\n");
@@ -45,7 +45,7 @@ public class DeprecatedUsageByPluginReport extends Report {
                 writer.append("</ul>\n\n");
             }
 
-            if (usage.getMethods().size() > 0) {
+            if (!usage.getMethods().isEmpty()) {
                 writer.append("<h3>Methods</h3><ul>");
                 for (String method : usage.getMethods()) {
                     writer.append("<li>").append(JavadocUtil.signatureToJenkinsdocLink(method)).append("</li>\n");
@@ -53,7 +53,7 @@ public class DeprecatedUsageByPluginReport extends Report {
                 writer.append("</ul>\n\n");
             }
 
-            if (usage.getFields().size() > 0) {
+            if (!usage.getFields().isEmpty()) {
                 writer.append("<h3>Fields</h3><ul>");
                 for (String field : usage.getFields()) {
                     writer.append("<li>").append(JavadocUtil.signatureToJenkinsdocLink(field)).append("</li>\n");
@@ -90,7 +90,7 @@ public class DeprecatedUsageByPluginReport extends Report {
             }
             plugin.put("fields", fields);
 
-            map.put(usage.getPlugin().artifactId, plugin);
+            map.put(usage.getPlugin().artifactId(), plugin);
         }
         writer.append(map.toString(2));
     }

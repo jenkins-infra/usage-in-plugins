@@ -1,13 +1,14 @@
 package org.jenkinsci.deprecatedusage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.jenkinsci.deprecatedusage.JavadocUtil.signatureToJenkinsdocUrl;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class JavadocUtilTest {
+class JavadocUtilTest {
+
     @Test
-    public void testLinking() {
+    void testLinking() {
         assertEquals("http://javadoc.jenkins.io/hudson/util/RunList.html#size%28%29",
                 signatureToJenkinsdocUrl("hudson/util/RunList#size()I"));
 

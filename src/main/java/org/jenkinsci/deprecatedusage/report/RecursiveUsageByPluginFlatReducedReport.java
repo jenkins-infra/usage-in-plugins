@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Set;
 
 public class RecursiveUsageByPluginFlatReducedReport extends Report {
-    private LevelReportStorage levelReportStorage;
+    private final LevelReportStorage levelReportStorage;
 
     public RecursiveUsageByPluginFlatReducedReport(LevelReportStorage levelReportStorage, File outputDir, String reportName) {
         super(null, null, outputDir, reportName);
@@ -34,13 +34,11 @@ public class RecursiveUsageByPluginFlatReducedReport extends Report {
         pluginNames.forEach(pluginName -> {
             List<String> pluginMethods = new ArrayList<>(levelReportStorage.pluginsToMethods.get(pluginName));
             pluginMethods.sort(String::compareToIgnoreCase);
-            
+
             JSONObject methodHierarchies = JsonHelper.createOrderedJSONObject();
 
             Set<String> allSecondaryMethods = new HashSet<>();
-            pluginMethods.forEach(method -> {
-                collectCallHierarchy(method, allSecondaryMethods);
-            });
+            pluginMethods.forEach(method -> collectCallHierarchy(method, allSecondaryMethods));
             pluginMethods.forEach(method -> {
                 String methodNameAndPlugin = levelReportStorage.getPluginSourceForMethod(method);
                 methodHierarchies.put(methodNameAndPlugin, computeCallHierarchy(method, allSecondaryMethods));
@@ -101,9 +99,7 @@ public class RecursiveUsageByPluginFlatReducedReport extends Report {
 
         Set<String> callers = levelReportStorage.globalConsumerToProviders.get(method);
         if (callers != null) {
-            callers.forEach(s -> {
-                collectCallHierarchy(s, level + 1, allSecondaryMethods);
-            });
+            callers.forEach(s -> collectCallHierarchy(s, level + 1, allSecondaryMethods));
         }
     }
 }

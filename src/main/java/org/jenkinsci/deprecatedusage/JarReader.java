@@ -11,23 +11,22 @@ public class JarReader implements Closeable {
     private final ZipInputStream zipInputStream;
     private ZipEntry entry;
 
-    public JarReader(InputStream input) throws IOException {
+    public JarReader(InputStream input) {
         super();
         this.zipInputStream = new ZipInputStream(new BufferedInputStream(input, 50 * 1024));
     }
 
     public String nextClass() throws IOException {
-        entry = zipInputStream.getNextEntry();
-        while (entry != null && !entry.getName().endsWith(".class")) {
+        do {
             entry = zipInputStream.getNextEntry();
-        }
+        } while (entry != null && !entry.getName().endsWith(".class"));
         if (entry != null) {
             return entry.getName();
         }
         return null;
     }
 
-    public InputStream getInputStream() throws IOException {
+    public InputStream getInputStream() {
         return zipInputStream;
     }
 

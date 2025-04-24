@@ -25,8 +25,9 @@ import java.util.stream.Collectors;
  */
 public class Options {
 
-    private static final String DEFAULT_UPDATE_CENTER_URL = "https://updates.jenkins-ci.org/update-center.json";
-    private static final Options OPTIONS = new Options();
+    // set via Main
+    private static String DEFAULT_UPDATE_CENTER_URL = "https://updates.jenkins-ci.org/update-center.json";
+    private static Options OPTIONS = new Options();
     private static Set<String> additionalClasses;
     private static Map<String, Set<String>> additionalMethodNames;
     private static Map<String, Set<String>> additionalFields;
@@ -76,7 +77,7 @@ public class Options {
 
     @Option(name = "-r", aliases = "--recursive", usage = "Recursively check for method signatures (does not work for class/field at the moment)")
     public boolean recursive;
-    
+
     @Option(name = "--recursiveMaxDepth", metaVar = "MAX_DEPTH", usage = "Maximum depth for the recursion, default to 5. Only considered if recursive mode is activated.")
     public int recursiveMaxDepth = 5;
 
@@ -110,7 +111,7 @@ public class Options {
     public static Options get() {
         return OPTIONS;
     }
-    
+
     public void buildCache() {
         if (additionalClassesFile != null) {
             buildAdditionalClasses();
@@ -143,12 +144,12 @@ public class Options {
         if (Files.notExists(path)) {
             throw new IllegalArgumentException("Additional classes file option provided, but file not found: " + path);
         }
-        
+
         additionalClasses = new HashSet<>();
         try {
             for (String line : Files.readAllLines(path, StandardCharsets.UTF_8)) {
                 String trimmedLine = line.trim();
-                if (!trimmedLine.isEmpty() && !trimmedLine.startsWith("#")){
+                if (!trimmedLine.isEmpty() && !trimmedLine.startsWith("#")) {
                     String className = trimmedLine.replaceAll("\\.", "/");
                     additionalClasses.add(className);
                 }
@@ -184,7 +185,7 @@ public class Options {
         try {
             for (String line : Files.readAllLines(path, StandardCharsets.UTF_8)) {
                 String trimmedLine = line.trim();
-                if (!trimmedLine.isEmpty() && !trimmedLine.startsWith("#")){
+                if (!trimmedLine.isEmpty() && !trimmedLine.startsWith("#")) {
                     int hashIndex = trimmedLine.indexOf('#');
                     if (hashIndex != -1) {
                         String className = trimmedLine.substring(0, hashIndex).replaceAll("\\.", "/");
@@ -218,7 +219,7 @@ public class Options {
         if (Files.notExists(path)) {
             throw new IllegalArgumentException("Additional fields file option provided, but file not found: " + path);
         }
-        
+
         additionalFields = new HashMap<>();
         try {
             for (String line : Files.readAllLines(path, StandardCharsets.UTF_8)) {
@@ -250,7 +251,7 @@ public class Options {
         }
         return limitedScopeOfPlugins;
     }
-    
+
     private void buildLimitedScopeOfPlugins() {
         Path path = limitPluginsFile.toPath();
         if (Files.notExists(path)) {

@@ -31,7 +31,7 @@ public class LevelReportStorage {
      * The different levels a method was found at
      */
     public final Map<String, Set<Integer>> methodToLevels = new HashMap<>();
-    
+
     // To rebuild the dependency tree
     public final Map<String, Set<String>> globalConsumerToProviders = new HashMap<>();
     public final Map<String, Set<String>> globalProviderToConsumers = new HashMap<>();
@@ -41,15 +41,14 @@ public class LevelReportStorage {
 
     public void addLevel(int level, List<DeprecatedUsage> usages) {
         usages.forEach(u -> {
-            String pluginName = u.getPlugin().artifactId;
+            String pluginName = u.getPlugin().artifactId();
 
             Map<String, Set<String>> currPluginProviderToConsumers = new HashMap<>(u.getProviderToConsumers());
             Map<String, Set<String>> currPluginConsumerToProviders = new HashMap<>(u.getConsumerToProviders());
             if (!currPluginProviderToConsumers.isEmpty()) {
                 // kept as a "for i" format to ease debug in case of very large number of occurrences
                 List<String> keys = new ArrayList<>(currPluginProviderToConsumers.keySet());
-                for (int i = 0; i < keys.size(); i++) {
-                    String provider = keys.get(i);
+                for (String provider : keys) {
                     Set<String> consumers = currPluginProviderToConsumers.get(provider);
                     globalProviderToConsumers.computeIfAbsent(provider, s -> new HashSet<>()).addAll(consumers);
 

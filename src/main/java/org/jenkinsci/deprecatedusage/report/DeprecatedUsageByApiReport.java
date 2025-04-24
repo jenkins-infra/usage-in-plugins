@@ -22,9 +22,9 @@ import java.util.TreeSet;
  */
 public class DeprecatedUsageByApiReport extends Report {
 
-    private SortedMap<String, SortedSet<String>> deprecatedClassesToPlugins = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-    private SortedMap<String, SortedSet<String>> deprecatedFieldsToPlugins = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-    private SortedMap<String, SortedSet<String>> deprecatedMethodsToPlugins = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private final SortedMap<String, SortedSet<String>> deprecatedClassesToPlugins = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private final SortedMap<String, SortedSet<String>> deprecatedFieldsToPlugins = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private final SortedMap<String, SortedSet<String>> deprecatedMethodsToPlugins = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     public DeprecatedUsageByApiReport(DeprecatedApi api, List<DeprecatedUsage> usages, File outputDir, String reportName) {
         super(api, usages, outputDir, reportName);
@@ -45,17 +45,17 @@ public class DeprecatedUsageByApiReport extends Report {
 
             for (String className : deprecatedClassesUsed) {
                 if (usageClasses.contains(className)) {
-                    deprecatedClassesToPlugins.computeIfAbsent(className, s -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER)).add(usage.getPlugin().artifactId);
+                    deprecatedClassesToPlugins.computeIfAbsent(className, s -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER)).add(usage.getPlugin().artifactId());
                 }
             }
             for (String methodName : deprecatedMethodsUsed) {
                 if (usageMethods.contains(methodName)) {
-                    deprecatedMethodsToPlugins.computeIfAbsent(methodName, s -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER)).add(usage.getPlugin().artifactId);
+                    deprecatedMethodsToPlugins.computeIfAbsent(methodName, s -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER)).add(usage.getPlugin().artifactId());
                 }
             }
             for (String fieldName : deprecatedFieldsUsed) {
                 if (usageFields.contains(fieldName)) {
-                    deprecatedFieldsToPlugins.computeIfAbsent(fieldName, s -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER)).add(usage.getPlugin().artifactId);
+                    deprecatedFieldsToPlugins.computeIfAbsent(fieldName, s -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER)).add(usage.getPlugin().artifactId());
                 }
             }
         }
