@@ -110,7 +110,7 @@ public class DeprecatedApi {
 
         @Override
         public void visit(int version, int access, String name, String signature, String superName,
-                String[] interfaces) {
+                          String[] interfaces) {
             // log(name + " extends " + superName + " {");
             if (isPublic(access)) {
                 currentClass = name;
@@ -124,7 +124,7 @@ public class DeprecatedApi {
 
         @Override
         public MethodVisitor visitMethod(int access, String name, String desc, String signature,
-                String[] exceptions) {
+                                         String[] exceptions) {
             if (currentClass != null && isDeprecated(access) && isPublic(access)) {
                 methods.add(getMethodKey(currentClass, name, desc));
             }
@@ -133,7 +133,7 @@ public class DeprecatedApi {
 
         @Override
         public FieldVisitor visitField(int access, String name, String desc, String signature,
-                Object value) {
+                                       Object value) {
             if (currentClass != null && isDeprecated(access) && isPublic(access)) {
                 fields.add(getFieldKey(currentClass, name, desc));
             }

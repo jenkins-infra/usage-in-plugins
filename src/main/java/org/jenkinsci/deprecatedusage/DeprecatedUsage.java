@@ -1,5 +1,13 @@
 package org.jenkinsci.deprecatedusage;
 
+import org.apache.commons.io.IOUtils;
+import org.jenkinsci.deprecatedusage.search.SearchCriteria;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.Handle;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,14 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import org.apache.commons.io.IOUtils;
-
-import org.jenkinsci.deprecatedusage.search.SearchCriteria;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.Handle;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
 
 //TODO rename to remove the Deprecated as it was generalized over time to look for any calls
 public class DeprecatedUsage {
@@ -142,7 +142,9 @@ public class DeprecatedUsage {
         classReader.accept(aClassVisitor, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
     }
 
-    public Plugin getPlugin() { return plugin; }
+    public Plugin getPlugin() {
+        return plugin;
+    }
 
     public Set<String> getClasses() {
         return new TreeSet<>(classes);
@@ -208,7 +210,7 @@ public class DeprecatedUsage {
      *
      * @see Options
      */
-    private boolean shouldAnalyze(String className)  {
+    private boolean shouldAnalyze(String className) {
         if (className.endsWith("DefaultTypeTransformation")) {
             // various DefaultTypeTransformation#box signatures seem false positive in plugins written in Groovy
             return false;
@@ -264,7 +266,7 @@ public class DeprecatedUsage {
 
         @Override
         public void visit(int version, int access, String name, String signature, String superName,
-                String[] interfaces) {
+                          String[] interfaces) {
             // log(name + " extends " + superName + " {");
 
             final List<String> superClassAndInterfaces = new ArrayList<>();
@@ -305,7 +307,7 @@ public class DeprecatedUsage {
 
         @Override
         public MethodVisitor visitMethod(int access, String name, String desc, String signature,
-                String[] exceptions) {
+                                         String[] exceptions) {
             // asm javadoc says to return a new instance each time
             return new CallersMethodVisitor(currentClassName, name, desc, signature);
         }
@@ -336,7 +338,7 @@ public class DeprecatedUsage {
 
         @Override
         public void visitMethodInsn(int opcode, String owner, String name, String desc,
-                boolean itf) {
+                                    boolean itf) {
             methodCalled(owner, name, desc, this.className, this.name, this.desc);
         }
 

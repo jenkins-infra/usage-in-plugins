@@ -24,7 +24,7 @@ public class JavadocUtil {
             return label;
         }
 
-        return "<a href='" + url+ "'>" + label + "</a>";
+        return "<a href='" + url + "'>" + label + "</a>";
     }
 
     public static String signatureToJenkinsdocUrl(String fullSignature) {
@@ -45,7 +45,7 @@ public class JavadocUtil {
         String classMethodArgumentsAndReturn = fullSignature;
         String packageAndClass = fullSignature.substring(0, fullSignature.indexOf("#"));
 
-        int endOfPackage =  packageAndClass.lastIndexOf("/");
+        int endOfPackage = packageAndClass.lastIndexOf("/");
         if (endOfPackage > 0) {
             packageName = fullSignature.substring(0, endOfPackage);
             classMethodArgumentsAndReturn = fullSignature.substring(endOfPackage + 1);
@@ -109,6 +109,7 @@ public class JavadocUtil {
     private static class Scanner {
         private final String str;
         private int index = 0;
+
         public Scanner(String str) {
             this.str = str;
         }

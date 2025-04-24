@@ -33,8 +33,8 @@ public interface SearchCriteria {
     //TODO could be reduced to just methodKey
 
     /**
-     * @param methodKey Value is coming from {@link org.jenkinsci.deprecatedusage.DeprecatedApi#getMethodKey(String, String, String)}
-     * @param className Class containing the method, used in the methodKey
+     * @param methodKey  Value is coming from {@link org.jenkinsci.deprecatedusage.DeprecatedApi#getMethodKey(String, String, String)}
+     * @param className  Class containing the method, used in the methodKey
      * @param methodName Method name, used in the methodKey
      */
     boolean isLookingForMethod(String methodKey, String className, String methodName);

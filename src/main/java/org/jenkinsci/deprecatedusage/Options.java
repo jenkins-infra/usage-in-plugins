@@ -149,7 +149,7 @@ public class Options {
         try {
             for (String line : Files.readAllLines(path, StandardCharsets.UTF_8)) {
                 String trimmedLine = line.trim();
-                if (!trimmedLine.isEmpty() && !trimmedLine.startsWith("#")){
+                if (!trimmedLine.isEmpty() && !trimmedLine.startsWith("#")) {
                     String className = trimmedLine.replaceAll("\\.", "/");
                     additionalClasses.add(className);
                 }
@@ -185,7 +185,7 @@ public class Options {
         try {
             for (String line : Files.readAllLines(path, StandardCharsets.UTF_8)) {
                 String trimmedLine = line.trim();
-                if (!trimmedLine.isEmpty() && !trimmedLine.startsWith("#")){
+                if (!trimmedLine.isEmpty() && !trimmedLine.startsWith("#")) {
                     int hashIndex = trimmedLine.indexOf('#');
                     if (hashIndex != -1) {
                         String className = trimmedLine.substring(0, hashIndex).replaceAll("\\.", "/");

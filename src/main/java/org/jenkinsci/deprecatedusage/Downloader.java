@@ -2,6 +2,7 @@ package org.jenkinsci.deprecatedusage;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -35,7 +36,7 @@ public class Downloader {
         concurrentDownloadsPermit = new Semaphore(maxConcurrentDownloads);
     }
 
-    public Collection<JenkinsFile> useExistingFiles(Collection<JenkinsFile> files){
+    public Collection<JenkinsFile> useExistingFiles(Collection<JenkinsFile> files) {
         final Collection<JenkinsFile> synced = ConcurrentHashMap.newKeySet(files.size());
         for (JenkinsFile file : files) {
             if (file.isFileSynchronized()) {
@@ -147,7 +148,7 @@ public class Downloader {
             } catch (IOException ioEx) {
                 if (shouldRetryForException(ioEx) && retriesRemaining.getAndDecrement() > 0) {
                     try {
-                        System.out.printf("Failed to download %s due to %s, will retry in 750ms%n", StringUtils.isEmpty(ioEx.getMessage()) ? ioEx.getClass().getName() : ioEx.getMessage() , file.getUrl());
+                        System.out.printf("Failed to download %s due to %s, will retry in 750ms%n", StringUtils.isEmpty(ioEx.getMessage()) ? ioEx.getClass().getName() : ioEx.getMessage(), file.getUrl());
                         Thread.sleep(7500L);
                     } catch (InterruptedException ex) {
                         IOException toThrow = new IOException("InterruptedException in sleep backoff", ex);

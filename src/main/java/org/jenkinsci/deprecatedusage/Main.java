@@ -1,7 +1,5 @@
 package org.jenkinsci.deprecatedusage;
 
-import java.net.URI;
-
 import org.apache.commons.io.IOUtils;
 import org.jenkinsci.deprecatedusage.report.DeprecatedUnusedApiReport;
 import org.jenkinsci.deprecatedusage.report.DeprecatedUsageByApiReport;
@@ -24,6 +22,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.util.ArrayList;
