@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RecursiveUsageByPluginOnlyMethodsReport extends Report {
-    private LevelReportStorage levelReportStorage;
+    private final LevelReportStorage levelReportStorage;
 
     public RecursiveUsageByPluginOnlyMethodsReport(LevelReportStorage levelReportStorage, File outputDir, String reportName) {
         super(null, null, outputDir, reportName);

@@ -23,6 +23,7 @@ public abstract class Report {
     }
 
     protected abstract void generateHtmlReport(Writer writer) throws IOException;
+
     protected abstract void generateJsonReport(Writer writer) throws IOException;
 
     public void generateJsonReport() throws IOException {

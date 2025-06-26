@@ -34,11 +34,11 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 public class OptionsBasedSearchCriteria implements SearchCriteria {
-    
+
     private Predicate<String> directClassChecker;
     private Predicate<String> methodClassChecker;
     private Predicate<String> fieldClassChecker;
-    
+
     public OptionsBasedSearchCriteria() {
         if (Options.get().additionalClassesFile != null) {
             this.directClassChecker = convertToChecker(Options.getAdditionalClasses());
@@ -79,9 +79,9 @@ public class OptionsBasedSearchCriteria implements SearchCriteria {
 
     @Override
     public boolean shouldAnalyzeClass(String className) {
-        // if an additionalClasses file is specified, and this matches, 
-        // we ignore Options' includeJavaCoreClasses or onlyIncludeJenkinsClasses values, 
-        // given the least surprise is most likely that if the user explicitly passed a file, 
+        // if an additionalClasses file is specified, and this matches,
+        // we ignore Options' includeJavaCoreClasses or onlyIncludeJenkinsClasses values,
+        // given the least surprise is most likely that if the user explicitly passed a file,
         // they does want it to be analyzed even if coming from java.*, javax.*, or not from Jenkins core classes itself
         if (directClassChecker != null && directClassChecker.test(className)) {
             return true;
@@ -109,10 +109,10 @@ public class OptionsBasedSearchCriteria implements SearchCriteria {
 
         return true;
     }
-    
+
     private Predicate<String> convertToChecker(Collection<String> classNames) {
         Set<String> exactMatch = new HashSet<>();
-        
+
         // Could be optimized with some tree structure
         List<String> startsWith = new ArrayList<>();
         List<String> endsWith = new ArrayList<>();
@@ -158,9 +158,9 @@ public class OptionsBasedSearchCriteria implements SearchCriteria {
         if (predicates.isEmpty()) {
             return s -> false;
         } else if (predicates.size() == 1) {
-            return predicates.get(0);
+            return predicates.getFirst();
         } else {
-            Predicate<String> curr, first = curr = predicates.get(0);
+            Predicate<String> curr, first = curr = predicates.getFirst();
             for (int i = 1; i < predicates.size(); i++) {
                 curr = curr.or(predicates.get(i));
             }

@@ -2,10 +2,7 @@ package org.jenkinsci.deprecatedusage;
 
 import java.util.Objects;
 
-public class Plugin implements Comparable<Plugin> {
-    public final String artifactId;
-    public final String version;
-
+public record Plugin(String artifactId, String version) implements Comparable<Plugin> {
     public Plugin(String artifactId, String version) {
         this.artifactId = Objects.requireNonNull(artifactId);
         this.version = Objects.requireNonNull(version);
@@ -20,13 +17,6 @@ public class Plugin implements Comparable<Plugin> {
 
         if (!artifactId.equals(plugin.artifactId)) return false;
         return version.equals(plugin.version);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = artifactId.hashCode();
-        result = 31 * result + version.hashCode();
-        return result;
     }
 
     @Override

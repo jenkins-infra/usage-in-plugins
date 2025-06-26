@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Set;
 
 public class RecursiveUsageByPluginFlatReport extends Report {
-    private LevelReportStorage levelReportStorage;
+    private final LevelReportStorage levelReportStorage;
 
     public RecursiveUsageByPluginFlatReport(LevelReportStorage levelReportStorage, File outputDir, String reportName) {
         super(null, null, outputDir, reportName);

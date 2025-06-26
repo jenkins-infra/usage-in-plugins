@@ -139,9 +139,6 @@ public class DeprecatedUnusedApiReport extends Report {
         if (signature.contains("hudson")) {
             return true;
         }
-        if (signature.contains("org/kohsuke")) {
-            return true;
-        }
-        return false;
+        return signature.contains("org/kohsuke");
     }
 }

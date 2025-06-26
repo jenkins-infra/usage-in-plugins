@@ -1,19 +1,6 @@
 package org.jenkinsci.deprecatedusage;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
 import org.apache.commons.io.IOUtils;
-
 import org.jenkinsci.deprecatedusage.search.SearchCriteria;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -21,12 +8,24 @@ import org.objectweb.asm.Handle;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+
 //TODO rename to remove the Deprecated as it was generalized over time to look for any calls
 public class DeprecatedUsage {
     // python-wrapper has wrappers for all extension points and descriptors,
     // they are just wrappers and not real usage
     public static final Set<String> IGNORED_PLUGINS = new HashSet<>(
-            Arrays.asList("python-wrapper.hpi"));
+            List.of("python-wrapper.hpi"));
 
     private final Plugin plugin;
     private final boolean includePluginLibraries;
@@ -40,7 +39,7 @@ public class DeprecatedUsage {
      * Provider = methods we look for
      * Consumer = methods using a provider
      * And in next level, the consumer becomes the provider
-     * 
+     * <p>
      * For a given provider method, returns the consumers methods that calls it inside their bodies
      */
     private final Map<String, Set<String>> providerToConsumers = new HashMap<>();
@@ -49,7 +48,7 @@ public class DeprecatedUsage {
      * Provider = methods we look for
      * Consumer = methods using a provider
      * And in next level, the consumer becomes the provider
-     * 
+     * <p>
      * For a given consumer method, returns the provider methods it calls inside its body
      */
     private final Map<String, Set<String>> consumerToProviders = new HashMap<>();
@@ -81,7 +80,7 @@ public class DeprecatedUsage {
         analyzeWithClassVisitor(pluginFile, classVisitor);
     }
 
-    
+
     public void analyzeWithClassVisitor(File pluginFile, ClassVisitor aClassVisitor)
             throws IOException {
         // recent plugins package their classes as a jar file with the same name as the war file in
@@ -90,7 +89,7 @@ public class DeprecatedUsage {
             String fileName = warReader.nextClass();
             while (fileName != null) {
                 try {
-                    @SuppressWarnings("resource") // handled by warReader.nextClass()
+                    // handled by warReader.nextClass()
                     InputStream is = warReader.getInputStream();
                     analyze(is, aClassVisitor);
                 } catch (Exception e) {
@@ -138,13 +137,14 @@ public class DeprecatedUsage {
                         classes.add(name);
                     }
                 }
-                continue;
             }
         }
         classReader.accept(aClassVisitor, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
     }
 
-    public Plugin getPlugin() { return plugin; }
+    public Plugin getPlugin() {
+        return plugin;
+    }
 
     public Set<String> getClasses() {
         return new TreeSet<>(classes);
@@ -192,7 +192,7 @@ public class DeprecatedUsage {
             }
 
             String callerSignature = DeprecatedApi.getMethodKey(callerClassName, callerName, callerDesc);
-            
+
             providerToConsumers.computeIfAbsent(methodKey, s -> new HashSet<>()).add(callerSignature);
             consumerToProviders.computeIfAbsent(callerSignature, s -> new HashSet<>()).add(methodKey);
         }
@@ -210,7 +210,7 @@ public class DeprecatedUsage {
      *
      * @see Options
      */
-    private boolean shouldAnalyze(String className)  {
+    private boolean shouldAnalyze(String className) {
         if (className.endsWith("DefaultTypeTransformation")) {
             // various DefaultTypeTransformation#box signatures seem false positive in plugins written in Groovy
             return false;
@@ -225,7 +225,7 @@ public class DeprecatedUsage {
         }
 
         String fieldKey = DeprecatedApi.getFieldKey(className, name, desc);
-        
+
         boolean lookingForClass = searchCriteria.isLookingForClass(className);
         boolean lookingForFieldKey = searchCriteria.isLookingForField(fieldKey, className, name);
         if (lookingForClass || lookingForFieldKey) {
@@ -266,9 +266,9 @@ public class DeprecatedUsage {
 
         @Override
         public void visit(int version, int access, String name, String signature, String superName,
-                String[] interfaces) {
+                          String[] interfaces) {
             // log(name + " extends " + superName + " {");
-            
+
             final List<String> superClassAndInterfaces = new ArrayList<>();
             // superClass may be null for java.lang.Object and module-info.class
             // Object would have been filtered but we see lots of module-info classes
@@ -294,12 +294,12 @@ public class DeprecatedUsage {
     private class CallersClassVisitor extends ClassVisitor {
         //TODO check if ThreadLocal is really required
         private String currentClassName = null;
-        
+
         CallersClassVisitor() {
             super(Opcodes.ASM9);
         }
 
-        @Override 
+        @Override
         public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
             super.visit(version, access, name, signature, superName, interfaces);
             currentClassName = name;
@@ -307,7 +307,7 @@ public class DeprecatedUsage {
 
         @Override
         public MethodVisitor visitMethod(int access, String name, String desc, String signature,
-                String[] exceptions) {
+                                         String[] exceptions) {
             // asm javadoc says to return a new instance each time
             return new CallersMethodVisitor(currentClassName, name, desc, signature);
         }
@@ -317,11 +317,11 @@ public class DeprecatedUsage {
      * Visit every methods and fields
      */
     private class CallersMethodVisitor extends MethodVisitor {
-        String className;
-        String name;
-        String desc;
-        String signature;
-        
+        final String className;
+        final String name;
+        final String desc;
+        final String signature;
+
         CallersMethodVisitor(String className, String name, String desc, String signature) {
             super(Opcodes.ASM9);
             this.className = className;
@@ -338,15 +338,14 @@ public class DeprecatedUsage {
 
         @Override
         public void visitMethodInsn(int opcode, String owner, String name, String desc,
-                boolean itf) {
+                                    boolean itf) {
             methodCalled(owner, name, desc, this.className, this.name, this.desc);
         }
 
         @Override
-        public void visitInvokeDynamicInsn(String name, String descriptor, Handle bootstrapMethodHandle, 
+        public void visitInvokeDynamicInsn(String name, String descriptor, Handle bootstrapMethodHandle,
                                            Object... bootstrapMethodArguments) {
-            if (bootstrapMethodArguments.length > 1 && bootstrapMethodArguments[1] instanceof Handle) {
-                Handle methodArgument = (Handle) bootstrapMethodArguments[1];
+            if (bootstrapMethodArguments.length > 1 && bootstrapMethodArguments[1] instanceof Handle methodArgument) {
                 methodCalled(methodArgument.getOwner(), methodArgument.getName(), methodArgument.getDesc(),
                         this.className, this.name, this.desc);
             }
