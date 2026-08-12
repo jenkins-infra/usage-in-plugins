@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 public class Options {
 
     // set via Main
-    private static String DEFAULT_UPDATE_CENTER_URL = "https://updates.jenkins-ci.org/update-center.json";
+    private static String DEFAULT_UPDATE_CENTER_URL = "https://updates.jenkins.io/update-center.json";
     private static Options OPTIONS = new Options();
     private static Set<String> additionalClasses;
     private static Map<String, Set<String>> additionalMethodNames;
